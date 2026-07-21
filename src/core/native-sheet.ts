@@ -108,9 +108,8 @@ export class NativeSheet {
 			this.view.setTotalRows(this.renderer.totalRows);
 			this.syncView();
 		};
-		// Синхронизировать начальное количество строк (ensureRows в конструкторе отработал до onExpand)
+		// Синхронизировать _totalRows с расширенным количеством (без перестроения rowMap)
 		this.view.setTotalRows(this.renderer.totalRows);
-		this.syncView();
 
 		this.overlay = new SelectionOverlay(
 			this.renderer.cellsLayer,
