@@ -1203,6 +1203,8 @@ export class NativeSheet {
 			const dr = this.toDataRow(target.row + r);
 			if (this.disabledRows.has(dr)) continue;
 			for (let c = 0; c < width; c++) {
+				const colDef = this.renderer.getColumn(target.col + c);
+				if (colDef?.readOnly) continue;
 				const old = this.model.get(dr, target.col + c);
 				const empty = old.value === null || old.value === undefined;
 				this._undoMgr.startBatch(dr, target.col + c, empty ? null : { ...old });
@@ -1240,6 +1242,8 @@ export class NativeSheet {
 			const dr = this.toDataRow(r);
 			if (this.disabledRows.has(dr)) continue;
 			for (let c = left; c <= right; c++) {
+				const colDef = this.renderer.getColumn(c);
+				if (colDef?.readOnly) continue;
 				const old = this.model.get(dr, c);
 				const empty = old.value === null || old.value === undefined;
 				this._undoMgr.startBatch(dr, c, empty ? null : { ...old });

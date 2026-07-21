@@ -691,9 +691,13 @@ export class Renderer {
 			el.style.display = "";
 			el.dataset.col = String(c);
 			el.dataset.row = String(row);
-			el.classList.toggle("nt-cell--readonly", this.hasExplicitColumns && !colDef);
-			el.classList.toggle("nt-cell--disabled", this.disabledRows.has(this.dataRow(row)));
-			if (this.hasExplicitColumns && !colDef) el.style.cursor = "default"; else el.style.cursor = "";
+			const isPhantom = this.hasExplicitColumns && !colDef;
+			const isDisabledRow = this.disabledRows.has(this.dataRow(row));
+			const isReadOnlyCol = !!colDef?.readOnly && !isPhantom;
+			el.classList.toggle("nt-cell--readonly", isPhantom);
+			el.classList.toggle("nt-cell--disabled", isDisabledRow);
+			el.classList.toggle("nt-cell--readonly-col", isReadOnlyCol);
+			el.style.cursor = isPhantom ? "default" : "";
 			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef);
 		}
 
