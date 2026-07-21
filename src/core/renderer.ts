@@ -684,6 +684,8 @@ export class Renderer {
 			el.style.display = "";
 			el.dataset.col = String(c);
 			el.dataset.row = String(row);
+			el.classList.toggle("nt-cell--readonly", this.hasExplicitColumns && !colDef);
+			if (this.hasExplicitColumns && !colDef) el.style.cursor = "default"; else el.style.cursor = "";
 			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef);
 		}
 
@@ -709,10 +711,9 @@ export class Renderer {
 				if (h.row === level) gridMap.set(h.col, h);
 			}
 
-			const cells: { col: number; colSpan: number; rowSpan: number; label: string }[] = [];
+			const cells: { col: number; colSpan: number; rowSpan: number; label: string; phantom?: boolean }[] = [];
 			let c = sc;
 			while (c <= ec) {
-				// Пропустить колонки, уже покрытые rowSpan сверху
 				if (covered.has(`${level},${c}`)) {
 					c++;
 					continue;
@@ -721,7 +722,6 @@ export class Renderer {
 				const h = gridMap.get(c);
 				if (h && h.colSpan > 0) {
 					cells.push({ col: h.col, colSpan: h.colSpan, rowSpan: h.rowSpan, label: h.label || colToLetter(h.col) });
-					// Пометить колонки на нижних уровнях как покрытые
 					for (let rr = level + 1; rr < level + h.rowSpan && rr < this.maxDepth; rr++) {
 						for (let cc = h.col; cc < h.col + h.colSpan; cc++) {
 							covered.add(`${rr},${cc}`);
@@ -730,7 +730,7 @@ export class Renderer {
 					c += h.colSpan;
 				} else {
 					const phantomRowSpan = this.maxDepth - level;
-					cells.push({ col: c, colSpan: 1, rowSpan: phantomRowSpan, label: colToLetter(c) });
+					cells.push({ col: c, colSpan: 1, rowSpan: phantomRowSpan, label: colToLetter(c), phantom: this.hasExplicitColumns });
 					for (let rr = level + 1; rr < level + phantomRowSpan && rr < this.maxDepth; rr++) {
 						covered.add(`${rr},${c}`);
 					}
@@ -763,14 +763,14 @@ export class Renderer {
 
 					const cellBottom = level + cellInfo.rowSpan - 1;
 
-					if (cellBottom === leafLevel && cellInfo.colSpan === 1) {
+					if (cellBottom === leafLevel && cellInfo.colSpan === 1 && !cellInfo.phantom) {
 						const btn = document.createElement("span");
 						btn.className = "nt-header-sort-btn";
 						btn.textContent = "▾";
 						btn.dataset.col = String(cellInfo.col);
 						el.append(btn);
 					}
-					if (cellBottom === leafLevel && cellInfo.colSpan === 1) {
+					if (cellBottom === leafLevel && cellInfo.colSpan === 1 && !cellInfo.phantom) {
 						const resizer = document.createElement("div");
 						resizer.className = "nt-resize-handle";
 						resizer.dataset.col = String(cellInfo.col);
@@ -784,6 +784,8 @@ export class Renderer {
 				el.style.display = "";
 				el.dataset.col = String(cellInfo.col);
 				el.dataset.colSpan = String(cellInfo.colSpan);
+				el.classList.toggle("nt-header-cell--phantom", !!cellInfo.phantom);
+				el.style.cursor = cellInfo.phantom ? "default" : "";
 				this.toggleHeaderClass(el, cellInfo.col, "col");
 			}
 

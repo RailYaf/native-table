@@ -685,6 +685,7 @@ export class NativeSheet {
 		// Заголовок столбца — выделить весь столбец (без скролла)
 		const colHeader = target.closest(".nt-header-cell") as HTMLElement;
 		if (colHeader?.dataset.col !== undefined) {
+			if (colHeader.classList.contains("nt-header-cell--phantom")) return;
 			const col = Number(colHeader.dataset.col);
 			const span = Number(colHeader.dataset.colSpan) || 1;
 			if (!Number.isNaN(col)) {
@@ -733,6 +734,10 @@ export class NativeSheet {
 		if (!found) return;
 
 		const { row, col } = found;
+
+		// Фантомные колонки не выделяются
+		const cellEl = target.closest(".nt-cell") as HTMLElement;
+		if (cellEl?.classList.contains("nt-cell--readonly")) return;
 
 		if (this.editor.isActive()) this.editor.commit();
 
