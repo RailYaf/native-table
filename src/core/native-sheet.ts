@@ -674,9 +674,12 @@ export class NativeSheet {
 
 		// Угловая ячейка — выделить всю таблицу
 		if (target.classList.contains("nt-corner")) {
+			const maxCol = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
+				? this.renderer.dataColCount - 1
+				: this.renderer.totalCols - 1;
 			this.setSelectionNoScroll({
 				start: { row: 0, col: 0 },
-				end: { row: this.renderer.totalRows - 1, col: this.renderer.totalCols - 1 },
+				end: { row: this.renderer.totalRows - 1, col: maxCol },
 			});
 			this.container.focus();
 			return;
@@ -709,13 +712,16 @@ export class NativeSheet {
 		if (rowHeader?.dataset.row !== undefined) {
 			const row = Number(rowHeader.dataset.row);
 			if (!Number.isNaN(row)) {
+				const maxCol = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
+					? this.renderer.dataColCount - 1
+					: this.renderer.totalCols - 1;
 				if (e.shiftKey && this.selection.start) {
-					const end = { row, col: this.renderer.totalCols - 1 };
+					const end = { row, col: maxCol };
 					this.setSelectionNoScroll({ start: this.selection.start, end });
 				} else {
 					this.setSelectionNoScroll({
 						start: { row, col: 0 },
-						end: { row, col: this.renderer.totalCols - 1 },
+						end: { row, col: maxCol },
 					});
 					this.startDrag("row");
 				}
@@ -974,11 +980,18 @@ export class NativeSheet {
 			if (found && this.selection.start) {
 				const end = { ...found };
 				if (axis === "row") {
-					end.col = this.renderer.totalCols - 1;
+					end.col = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
+						? this.renderer.dataColCount - 1
+						: this.renderer.totalCols - 1;
 					this.selection.start = { row: this.selection.start.row, col: 0 };
 				} else if (axis === "col") {
 					end.row = this.renderer.visibleRowCount() - 1;
 					this.selection.start = { row: 0, col: this.selection.start.col };
+				} else {
+					// Обычный драг: не заходить на фантомные колонки
+					if (this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0 && end.col >= this.renderer.dataColCount) {
+						end.col = this.renderer.dataColCount - 1;
+					}
 				}
 				this.setSelectionNoScroll({ start: this.selection.start, end });
 			}
@@ -1011,13 +1024,17 @@ export class NativeSheet {
 				ev.clientY - bodyRect.top,
 			);
 			if (!found) return;
+			// Не протягивать на фантомные колонки
+			const maxCol = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
+				? this.renderer.dataColCount - 1
+				: this.renderer.totalCols - 1;
 			let newTop = srcTop;
 			let newBottom = srcBottom;
 			let newLeft = srcLeft;
 			let newRight = srcRight;
 			if (found.row > srcBottom) newBottom = found.row;
 			else if (found.row < srcTop) newTop = found.row;
-			if (found.col > srcRight) newRight = found.col;
+			if (found.col > srcRight) newRight = Math.min(found.col, maxCol);
 			else if (found.col < srcLeft) newLeft = found.col;
 			this.setSelectionNoScroll({
 				start: { row: newTop, col: newLeft },
@@ -1057,6 +1074,11 @@ export class NativeSheet {
 		srcLeft: number,
 		srcRight: number,
 	): void {
+		// Не заходить на фантомные колонки
+		if (this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0) {
+			right = Math.min(right, this.renderer.dataColCount - 1);
+			left = Math.min(left, this.renderer.dataColCount - 1);
+		}
 		const srcH = srcBottom - srcTop + 1;
 		for (let c = left; c <= right; c++) {
 			// Check if source column has numeric progression

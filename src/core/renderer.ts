@@ -77,6 +77,8 @@ export class Renderer {
 	baseRowCount: number;
 	/** Есть ли явно заданные колонки (не дефолтный режим A,B,C...) */
 	hasExplicitColumns = false;
+	/** Количество data-колонок (без фантомных) */
+	dataColCount = 0;
 	/** Нужно заполнить viewport фантомными read-only колонками */
 	private needsViewportFill = false;
 	selectedRect?: import("../utils/types").SelectionRect;
@@ -104,6 +106,7 @@ export class Renderer {
 		this.headerH = this.maxDepth * HEADER_ROW_HEIGHT;
 		this.totalCols = this.columns.length; // листовые колонки = data-колонки
 		this.hasExplicitColumns = columns.length > 0;
+		this.dataColCount = this.totalCols;
 		this.needsViewportFill = this.hasExplicitColumns;
 
 		this.baseRowCount = totalRows;
@@ -227,6 +230,7 @@ export class Renderer {
 		this.maxDepth = flat.maxDepth || 1;
 		this.totalCols = this.columns.length;
 		this.hasExplicitColumns = columns.length > 0;
+		this.dataColCount = this.totalCols;
 		this.colWidths = Array.from({ length: this.totalCols }, (_, i) => this.columns[i]?.width ?? DEFAULT_COL_WIDTH);
 		if (!this.hasExplicitColumns) this.ensureCols(this.totalCols);
 		this.rebuildColLeftCache();
