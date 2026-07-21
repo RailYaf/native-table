@@ -163,7 +163,7 @@ export class Renderer {
 			bottom: "0",
 			width: `${HEADER_WIDTH}px`,
 			overflow: "hidden",
-			zIndex: "5",
+			zIndex: "7",
 		});
 		container.append(this.headerCol);
 

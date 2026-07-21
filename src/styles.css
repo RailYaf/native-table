@@ -313,7 +313,7 @@
 	background: rgba(46, 125, 50, 0.08);
 	border: 2px solid rgba(46, 125, 50, 0.6);
 	box-sizing: border-box;
-	z-index: 6;
+	z-index: 4;
 }
 
 .nt-copy-range {
@@ -334,7 +334,7 @@
 	height: 8px;
 	background: #2e7d32;
 	cursor: crosshair;
-	z-index: 8;
+	z-index: 5;
 }
 
 .nt-cell--boolean {
