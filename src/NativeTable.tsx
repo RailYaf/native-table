@@ -18,7 +18,7 @@ import type { Cell, NativeSheetOptions } from "./utils/types";
 export interface NativeTableProps extends Omit<NativeSheetOptions, "onChange"> {
 	className?: string;
 	style?: React.CSSProperties;
-	onChange?: (_cells: Record<string, Cell>, action?: import("./utils/types").ChangeAction) => void;
+	onChange?: (allCells: Record<string, Cell>, changedCells: Record<string, { old: Cell | null; new: Cell | null }>, action?: import("./utils/types").ChangeAction) => void;
 	/** Вызывается при нажатии Сохранить (Ctrl+S / кнопка) с текущими ячейками */
 	onSave?: (cells: Record<string, Cell>) => void;
 	/** Показать спиннер загрузки */
@@ -73,7 +73,7 @@ export function NativeTable({
 				initialWidths: data?.widths as Record<string, number> | undefined,
 				initialHeights: data?.heights as number[] | undefined,
 				initialStyles: data?.styles as Record<string, import("./utils/types").CellStyle> | undefined,
-				onChange: (cells, action) => onChangeRef.current?.(cells, action),
+				onChange: (cells, changed, action) => onChangeRef.current?.(cells, changed, action),
 			});
 			sheetRef.current = sheet;
 		});

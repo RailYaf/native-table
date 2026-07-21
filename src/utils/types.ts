@@ -76,7 +76,7 @@ export interface NativeSheetOptions {
 	bufferRows?: number;
 	bufferCols?: number;
 	initialData?: Record<string, Cell>;
-	onChange?: (_cells: Record<string, Cell>, action?: ChangeAction) => void;
+	onChange?: (allCells: Record<string, Cell>, changedCells: Record<string, { old: Cell | null; new: Cell | null }>, action?: ChangeAction) => void;
 	/** Индексы строк, запрещённых к редактированию */
 	disabledRows?: number[];
 }

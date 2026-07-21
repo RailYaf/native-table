@@ -11,8 +11,8 @@ export class SheetModel {
 	/** Хранилище ячеек: ключ формата "A1" → ячейка */
 	private cells = new Map<string, Cell>();
 
-	/** Колбэк, вызываемый при каждом изменении данных (для IndexedDB). */
-	onChange?: (_cells: Record<string, Cell>, action?: ChangeAction) => void;
+	/** Колбэк, вызываемый при каждом изменении данных. */
+	onChange?: (allCells: Record<string, Cell>, changedCells: Record<string, { old: Cell | null; new: Cell | null }>, action?: ChangeAction) => void;
 
 	constructor(initial?: Record<string, Cell>) {
 		if (initial) {
@@ -64,7 +64,6 @@ export class SheetModel {
 		const key = cellKey(row, col);
 		if (raw === "") this.cells.delete(key);
 		else this.cells.set(key, { value: parseLiteral(raw) });
-		this.emit();
 	}
 
 	/** Удалить ячейку без вызова onChange. */
@@ -131,8 +130,8 @@ export class SheetModel {
 		this.emit("delete");
 	}
 
-	emit(action: ChangeAction = "edit"): void {
-		this.onChange?.(this.getAll(), action);
+	emit(action: ChangeAction = "edit", changedCells?: Record<string, { old: Cell | null; new: Cell | null }>): void {
+		this.onChange?.(this.getAll(), changedCells ?? {}, action);
 	}
 }
 

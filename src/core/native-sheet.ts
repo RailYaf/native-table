@@ -16,6 +16,7 @@
 
 import { UndoManager } from "../services/undo-manager";
 import { saveState } from "../services/storage";
+import { cellKey } from "../utils/cell-addr";
 import { formatCellDisplay, isBoolean, isReadOnly } from "../utils/column-utils";
 import { Editor } from "../ui/editor";
 import { handleKeyboard } from "../ui/keyboard";
@@ -24,6 +25,7 @@ import { Renderer } from "./renderer";
 import { SelectionOverlay } from "../ui/selection";
 import type {
 	Cell,
+	ChangeAction,
 	ColumnDef,
 	NativeSheetOptions,
 	SelectionRect,
@@ -790,13 +792,14 @@ export class NativeSheet {
 		const cell = this.model.get(dr, col);
 		const current = cell.value;
 		const next = current === true || current === "true" ? "false" : "true";
+		const key = cellKey(dr, col);
 		this._undoMgr.startBatch(dr, col, { ...cell });
 		this.model.set(dr, col, next);
 		const newCell = this.model.get(dr, col);
 		this._undoMgr.updateNewValue(0, { ...newCell });
 		this._undoMgr.commit();
 		this._updateToolbar();
-		this.model.emit("edit");
+		this.model.emit("edit", { [key]: { old: { ...cell }, new: { ...newCell } } });
 		this.renderer.refreshValues();
 	}
 
@@ -813,7 +816,7 @@ export class NativeSheet {
 	 */
 	save(): void {
 		this.saveColumnWidths();
-		this.options.onChange?.(this.model.getAll());
+		this.options.onChange?.(this.model.getAll(), {});
 		this._undoMgr.clear();
 		this._updateToolbar();
 	}
@@ -852,13 +855,16 @@ export class NativeSheet {
 		const er = Math.max(this.selection.start.row, this.selection.end.row);
 		const sc = Math.min(this.selection.start.col, this.selection.end.col);
 		const ec = Math.max(this.selection.start.col, this.selection.end.col);
+		const changedCells: Record<string, { old: Cell | null; new: Cell | null }> = {};
 		for (let r = sr; r <= er; r++) {
 			for (let c = sc; c <= ec; c++) {
 				const dr = this.toDataRow(r);
+				const key = cellKey(dr, c);
 				const old = this.model.get(dr, c);
 				this._undoMgr.startBatch(dr, c, { ...old });
 				const existing = { ...old };
 				existing.style = { ...existing.style, ...style };
+				changedCells[key] = { old: { ...old }, new: { ...existing } };
 				this.model.setSilent(dr, c, existing);
 				this._undoMgr.updateNewValue(this._undoMgr.batchSize - 1, { ...existing });
 			}
@@ -866,6 +872,7 @@ export class NativeSheet {
 		this._undoMgr.commit();
 		this._updateToolbar();
 		this.updateToolbarStyleState();
+		this.model.emit("edit", changedCells);
 		this.renderer.refreshValues();
 	}
 
@@ -932,9 +939,14 @@ export class NativeSheet {
 		const batch = dir === "undo" ? this._undoMgr.undo() : this._undoMgr.redo();
 		if (!batch) return;
 		let hasLayout = false;
+		const changedCells: Record<string, { old: Cell | null; new: Cell | null }> = {};
 		for (const c of batch) {
 			if (c.colWidth) { this.renderer.setColWidth(c.col, c.colWidth.old); hasLayout = true; continue; }
 			if (c.rowHeight) { this.renderer.setRowHeight(c.row, c.rowHeight.old); hasLayout = true; continue; }
+			const key = cellKey(c.row, c.col);
+			const oldCell = this.model.get(c.row, c.col);
+			const empty = oldCell.value === null || oldCell.value === undefined;
+			changedCells[key] = { old: empty ? null : { ...oldCell }, new: c.oldValue };
 			if (c.oldValue === null) this.model.deleteSilent(c.row, c.col);
 			else this.model.setSilent(c.row, c.col, c.oldValue);
 		}
@@ -944,7 +956,7 @@ export class NativeSheet {
 			this.renderer.highlightHeaders(this.selection);
 		}
 		this._updateToolbar();
-		this.model.emit(dir);
+		this.model.emit(dir as ChangeAction, changedCells);
 	}
 
 	private _updateToolbar(): void {
@@ -1087,8 +1099,8 @@ export class NativeSheet {
 			left = Math.min(left, this.renderer.dataColCount - 1);
 		}
 		const srcH = srcBottom - srcTop + 1;
+		const changedCells: Record<string, { old: Cell | null; new: Cell | null }> = {};
 		for (let c = left; c <= right; c++) {
-			// Check if source column has numeric progression
 			const srcNums: number[] = [];
 			for (let r = srcTop; r <= srcBottom; r++) {
 				const v = this.model.get(this.toDataRow(r), c).value;
@@ -1102,6 +1114,7 @@ export class NativeSheet {
 			for (let r = top; r <= bottom; r++) {
 				if (r >= srcTop && r <= srcBottom && c >= srcLeft && c <= srcRight) continue;
 				const dr = this.toDataRow(r);
+				const key = cellKey(dr, c);
 				const old = this.model.get(dr, c);
 				const empty = old.value === null || old.value === undefined;
 				this._undoMgr.startBatch(dr, c, empty ? null : { ...old });
@@ -1124,12 +1137,13 @@ export class NativeSheet {
 					this.model.setSilent(dr, c, cell);
 				}
 				const newCell = this.model.get(dr, c);
+				changedCells[key] = { old: empty ? null : { ...old }, new: { ...newCell } };
 				this._undoMgr.updateNewValue(this._undoMgr.batchSize - 1, { ...newCell });
 			}
 		}
 		this._undoMgr.commit();
 		this._updateToolbar();
-		this.model.emit("fill");
+		this.model.emit("fill", changedCells);
 		this.renderer.refreshValues();
 	}
 
@@ -1192,30 +1206,31 @@ export class NativeSheet {
 	private paste(): void {
 		this.clearCopy();
 		if (!this.clipboard || !this.selection.start || !this.selection.end) return;
-		// Bug 13: anchor to top-left of selection, not selection.end
 		const target = {
 			row: Math.min(this.selection.start.row, this.selection.end.row),
 			col: Math.min(this.selection.start.col, this.selection.end.col),
 		};
 		const height = this.clipboard.rect.er - this.clipboard.rect.sr + 1;
 		const width = this.clipboard.rect.ec - this.clipboard.rect.sc + 1;
+		const changedCells: Record<string, { old: Cell | null; new: Cell | null }> = {};
 		for (let r = 0; r < height; r++) {
 			const dr = this.toDataRow(target.row + r);
 			if (this.disabledRows.has(dr)) continue;
 			for (let c = 0; c < width; c++) {
 				const colDef = this.renderer.getColumn(target.col + c);
 				if (colDef?.readOnly) continue;
+				const key = cellKey(dr, target.col + c);
 				const old = this.model.get(dr, target.col + c);
 				const empty = old.value === null || old.value === undefined;
 				this._undoMgr.startBatch(dr, target.col + c, empty ? null : { ...old });
 				const value = this.clipboard.values[r]?.[c] ?? null;
 				const srcStyle = this.clipboard.styles?.[r]?.[c];
 				const raw = value === null ? "" : String(value);
-				// Записываем значение + стиль одним setSilent чтобы не потерять стиль
 				const cell = this.model.get(dr, target.col + c);
 				cell.value = raw === "" ? null : value;
 				if (srcStyle) cell.style = { ...srcStyle };
 				else delete cell.style;
+				changedCells[key] = { old: empty ? null : { ...old }, new: { ...cell } };
 				this.model.setSilent(dr, target.col + c, cell);
 				const newCell = this.model.get(dr, target.col + c);
 				this._undoMgr.updateNewValue(this._undoMgr.batchSize - 1, { ...newCell });
@@ -1223,7 +1238,7 @@ export class NativeSheet {
 		}
 		this._undoMgr.commit();
 		this._updateToolbar();
-		this.model.emit("paste");
+		this.model.emit("paste", changedCells);
 		this.setSelectionNoScroll({
 			start: target,
 			end: { row: target.row + height - 1, col: target.col + width - 1 },
@@ -1238,22 +1253,25 @@ export class NativeSheet {
 		const bottom = Math.max(this.selection.start.row, this.selection.end.row);
 		const left = Math.min(this.selection.start.col, this.selection.end.col);
 		const right = Math.max(this.selection.start.col, this.selection.end.col);
+		const changedCells: Record<string, { old: Cell | null; new: Cell | null }> = {};
 		for (let r = top; r <= bottom; r++) {
 			const dr = this.toDataRow(r);
 			if (this.disabledRows.has(dr)) continue;
 			for (let c = left; c <= right; c++) {
 				const colDef = this.renderer.getColumn(c);
 				if (colDef?.readOnly) continue;
+				const key = cellKey(dr, c);
 				const old = this.model.get(dr, c);
 				const empty = old.value === null || old.value === undefined;
 				this._undoMgr.startBatch(dr, c, empty ? null : { ...old });
 				this.model.deleteSilent(dr, c);
 				this._undoMgr.updateNewValue(this._undoMgr.batchSize - 1, null);
+				if (!empty) changedCells[key] = { old: { ...old }, new: null };
 			}
 		}
 		this._undoMgr.commit();
 		this._updateToolbar();
-		this.model.emit("clear");
+		this.model.emit("clear", changedCells);
 		this.renderer.refreshValues();
 	}
 
@@ -1270,6 +1288,7 @@ export class NativeSheet {
 		const oldStr = oldCell.value === null || oldCell.value === undefined ? "" : String(oldCell.value);
 		// Не записывать undo если значение не изменилось
 		if (value !== oldStr) {
+			const key = cellKey(dr, col);
 			const isEmpty = oldCell.value === null || oldCell.value === undefined;
 			this._undoMgr.startBatch(dr, col, isEmpty ? null : { ...oldCell });
 			this.model.set(dr, col, value);
@@ -1277,6 +1296,7 @@ export class NativeSheet {
 			this._undoMgr.updateNewValue(this._undoMgr.batchSize - 1, { ...newCell });
 			this._undoMgr.commit();
 			this._updateToolbar();
+			this.model.emit("edit", { [key]: { old: isEmpty ? null : { ...oldCell }, new: { ...newCell } } });
 		}
 		this.renderer.refreshValues();
 		const { totalRows, totalCols } = this.renderer;
