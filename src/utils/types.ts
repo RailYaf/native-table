@@ -28,6 +28,8 @@ export interface ColumnDef {
 	decimals?: number;
 	/** Дочерние колонки — создают многоуровневую шапку. Листовые колонки = колонки данных. */
 	children?: ColumnDef[];
+	/** Видимость колонки. false = скрыта. */
+	visible?: boolean;
 }
 
 export interface CellStyle {

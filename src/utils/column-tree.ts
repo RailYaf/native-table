@@ -42,6 +42,7 @@ export function flattenColumns(columns: ColumnDef[]): FlattenResult {
 		let col = startCol;
 
 		for (const node of nodes) {
+			if (node.visible === false) continue;
 			if (node.children && node.children.length > 0) {
 				// Групповая колонка: не листовая, рендерится как объединённая ячейка шапки
 				const childStart = col;
