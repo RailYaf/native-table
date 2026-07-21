@@ -97,6 +97,7 @@ export class NativeSheet {
 			options.defaultRowHeight,
 			options.columns ?? [],
 		);
+		this.renderer.disabledRows = this.disabledRows;
 
 		// Применить начальные ширины/высоты/стили из IndexedDB
 		if (options.initialWidths) for (const [c, w] of Object.entries(options.initialWidths)) this.renderer.setColWidth(Number(c), w);
@@ -596,6 +597,10 @@ export class NativeSheet {
 		if (!this.selection.start || !this.selection.end) return;
 		const from = Math.min(this.selection.start.row, this.selection.end.row);
 		const to = Math.max(this.selection.start.row, this.selection.end.row);
+		// Не удалять заблокированные строки
+		for (let r = from; r <= to; r++) {
+			if (this.disabledRows.has(this.toDataRow(r))) return;
+		}
 		this.model.deleteRows(from, to);
 		this.renderer.refreshValues();
 	}
@@ -1195,8 +1200,9 @@ export class NativeSheet {
 		const height = this.clipboard.rect.er - this.clipboard.rect.sr + 1;
 		const width = this.clipboard.rect.ec - this.clipboard.rect.sc + 1;
 		for (let r = 0; r < height; r++) {
+			const dr = this.toDataRow(target.row + r);
+			if (this.disabledRows.has(dr)) continue;
 			for (let c = 0; c < width; c++) {
-				const dr = this.toDataRow(target.row + r);
 				const old = this.model.get(dr, target.col + c);
 				const empty = old.value === null || old.value === undefined;
 				this._undoMgr.startBatch(dr, target.col + c, empty ? null : { ...old });
@@ -1231,8 +1237,9 @@ export class NativeSheet {
 		const left = Math.min(this.selection.start.col, this.selection.end.col);
 		const right = Math.max(this.selection.start.col, this.selection.end.col);
 		for (let r = top; r <= bottom; r++) {
+			const dr = this.toDataRow(r);
+			if (this.disabledRows.has(dr)) continue;
 			for (let c = left; c <= right; c++) {
-				const dr = this.toDataRow(r);
 				const old = this.model.get(dr, c);
 				const empty = old.value === null || old.value === undefined;
 				this._undoMgr.startBatch(dr, c, empty ? null : { ...old });

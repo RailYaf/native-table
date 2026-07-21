@@ -79,6 +79,8 @@ export class Renderer {
 	hasExplicitColumns = false;
 	/** Количество data-колонок (без фантомных) */
 	dataColCount = 0;
+	/** Индексы заблокированных строк */
+	disabledRows: Set<number> = new Set();
 	/** Нужно заполнить viewport фантомными read-only колонками */
 	private needsViewportFill = false;
 	selectedRect?: import("../utils/types").SelectionRect;
@@ -435,7 +437,7 @@ export class Renderer {
 		offsetX: number,
 		offsetY: number,
 	): { row: number; col: number } | null {
-		const bodyX = offsetX + this.bodyDiv.scrollLeft;
+		const bodyX = offsetX + this.bodyDiv.scrollLeft - HEADER_WIDTH;
 		const bodyY = offsetY + this.bodyDiv.scrollTop;
 		const col = Math.min(
 			Math.max(0, this.findColByOffset(Math.max(bodyX, 0))),
@@ -655,6 +657,7 @@ export class Renderer {
 			pool.row = row;
 			pool.el.style.top = `${this.rowTop(row)}px`;
 			pool.el.style.height = `${this.getRowHeight(row)}px`;
+			pool.el.classList.toggle("nt-row--disabled", this.disabledRows.has(this.dataRow(row)));
 			this.renderRowContents(pool, row, sc, ec);
 		}
 	}
@@ -689,6 +692,7 @@ export class Renderer {
 			el.dataset.col = String(c);
 			el.dataset.row = String(row);
 			el.classList.toggle("nt-cell--readonly", this.hasExplicitColumns && !colDef);
+			el.classList.toggle("nt-cell--disabled", this.disabledRows.has(this.dataRow(row)));
 			if (this.hasExplicitColumns && !colDef) el.style.cursor = "default"; else el.style.cursor = "";
 			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef);
 		}
