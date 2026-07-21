@@ -36,7 +36,7 @@ export class NativeSheet {
 	// ── Подсистемы ────────────────────────────────────────────────────────────
 	private model: SheetModel;       // данные ячеек
 	private view: SheetView;         // сортировка/фильтрация
-	private renderer: Renderer;      // виртуальный рендерер
+	readonly renderer: Renderer;      // виртуальный рендерер
 	private editor: Editor;          // редактор ячеек (input/select)
 	private overlay: SelectionOverlay; // оверлей выделения
 

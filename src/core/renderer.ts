@@ -81,6 +81,8 @@ export class Renderer {
 	dataColCount = 0;
 	/** Индексы заблокированных строк */
 	disabledRows: Set<number> = new Set();
+	/** Ошибки валидации: cellKey → список сообщений */
+	validationErrors: Record<string, string[]> = {};
 	/** Нужно заполнить viewport фантомными read-only колонками */
 	private needsViewportFill = false;
 	selectedRect?: import("../utils/types").SelectionRect;
@@ -554,10 +556,12 @@ export class Renderer {
 
 	refreshValues(): void {
 		for (const pool of this.rows) {
+			const dr = this.dataRow(pool.row);
 			for (let ci = 0; ci < pool.cells.length; ci++) {
 				const c = this.currentStartCol + ci;
 				if (c > this.currentEndCol) break;
-				renderCellContent(pool.cells[ci], this.model.get(this.dataRow(pool.row), c), this.columns[c]);
+				renderCellContent(pool.cells[ci], this.model.get(dr, c), this.columns[c]);
+				this.updateCellError(pool.cells[ci], c, dr);
 			}
 		}
 	}
@@ -633,6 +637,43 @@ export class Renderer {
 	 * Переложить DOM-строки и ячейки под новое окно виртуализации.
 	 * Использует пул RowElementPool — переиспользует созданные ранее ноды.
 	 */
+	/** Обновить индикатор ошибки валидации на ячейке. */
+	private updateCellError(el: HTMLElement, col: number, dataRow: number): void {
+		const cellKey = `${colToLetter(col)}${dataRow + 1}`;
+		const errors = this.validationErrors[cellKey];
+		let indicator = el.querySelector(".nt-cell-error") as HTMLElement | null;
+		if (errors && errors.length > 0) {
+			if (!indicator) {
+				indicator = document.createElement("div");
+				indicator.className = "nt-cell-error";
+				indicator.addEventListener("mouseenter", () => this.showErrorPopup(indicator!, errors));
+				indicator.addEventListener("mouseleave", () => this.hideErrorPopup());
+				el.append(indicator);
+			}
+			indicator.style.display = "";
+		} else if (indicator) {
+			indicator.style.display = "none";
+		}
+	}
+
+	private errorPopup: HTMLDivElement | null = null;
+
+	private showErrorPopup(anchor: HTMLElement, errors: string[]): void {
+		this.hideErrorPopup();
+		const popup = document.createElement("div");
+		popup.className = "nt-error-popup";
+		popup.innerHTML = errors.map((e) => `<div class="nt-error-popup-item">${e}</div>`).join("");
+		const rect = anchor.getBoundingClientRect();
+		popup.style.left = `${rect.right + 4}px`;
+		popup.style.top = `${rect.top}px`;
+		document.body.append(popup);
+		this.errorPopup = popup;
+	}
+
+	private hideErrorPopup(): void {
+		if (this.errorPopup) { this.errorPopup.remove(); this.errorPopup = null; }
+	}
+
 	private layoutRows(sr: number, er: number, sc: number, ec: number): void {
 		const needed = er - sr + 1;
 
@@ -699,6 +740,8 @@ export class Renderer {
 			el.classList.toggle("nt-cell--readonly-col", isReadOnlyCol);
 			el.style.cursor = isPhantom ? "default" : "";
 			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef);
+			// Индикатор ошибки валидации
+			this.updateCellError(el, c, this.dataRow(row));
 		}
 
 		// Hide excess cells

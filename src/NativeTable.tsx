@@ -25,6 +25,8 @@ export interface NativeTableProps extends Omit<NativeSheetOptions, "onChange"> {
 	loading?: boolean;
 	/** Индексы строк, запрещённых к редактированию */
 	disabledRows?: number[];
+	/** Ошибки валидации: cellKey → сообщения */
+	validationErrors?: Record<string, string[]>;
 }
 
 /** Основной компонент: тулбар + таблица. */
@@ -46,6 +48,7 @@ export function NativeTable({
 	onSave,
 	loading = false,
 	disabledRows = [],
+	validationErrors,
 }: NativeTableProps) {
 	/** Ссылка на контейнер таблицы (.nt-container). */
 	const ref = useRef<HTMLDivElement | null>(null);
@@ -56,6 +59,8 @@ export function NativeTable({
 	onChangeRef.current = onChange;
 	const onSaveRef = useRef(onSave);
 	onSaveRef.current = onSave;
+	const validationErrorsRef = useRef(validationErrors);
+	validationErrorsRef.current = validationErrors;
 
 	// Состояние color picker'ов (заливка и текст)
 	const [lastBg, setLastBg] = useState("#c8e6c9");
@@ -76,6 +81,8 @@ export function NativeTable({
 				onChange: (cells, changed, action) => onChangeRef.current?.(cells, changed, action),
 			});
 			sheetRef.current = sheet;
+			sheet.renderer.validationErrors = validationErrorsRef.current ?? {};
+			sheet.renderer.render(true);
 		});
 		return () => { cancelled = true; sheetRef.current?.destroy(); sheetRef.current = null; };
 	}, [rows, cols, tableName, defaultColWidth, defaultRowHeight, headerWidth, headerHeight, bufferRows, bufferCols]);
@@ -86,8 +93,15 @@ export function NativeTable({
 	}, [initialData]);
 
 	useEffect(() => {
-		if (sheetRef.current) sheetRef.current.setColumns(columns ?? []);
+		if (sheetRef.current && columns) sheetRef.current.setColumns(columns ?? []);
 	}, [columns]);
+
+	useEffect(() => {
+		if (sheetRef.current) {
+			sheetRef.current.renderer.validationErrors = validationErrors ?? {};
+			sheetRef.current.renderer.render(true);
+		}
+	}, [validationErrors, tableName]);
 
 	// ── Обработчик тулбара: делегирование по data-action ───────────────────────
 	const onToolbar = useCallback((e: React.MouseEvent) => {
