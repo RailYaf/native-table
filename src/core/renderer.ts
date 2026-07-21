@@ -75,6 +75,10 @@ export class Renderer {
 	rowMap: number[] = [];
 	/** Базовое количество строк (без учёта фильтра) */
 	baseRowCount: number;
+	/** Есть ли явно заданные колонки (не дефолтный режим A,B,C...) */
+	hasExplicitColumns = false;
+	/** Нужно заполнить viewport фантомными read-only колонками */
+	private needsViewportFill = false;
 	selectedRect?: import("../utils/types").SelectionRect;
 
 	constructor(
@@ -99,6 +103,8 @@ export class Renderer {
 		this.maxDepth = flat.maxDepth || 1;
 		this.headerH = this.maxDepth * HEADER_ROW_HEIGHT;
 		this.totalCols = this.columns.length; // листовые колонки = data-колонки
+		this.hasExplicitColumns = columns.length > 0;
+		this.needsViewportFill = this.hasExplicitColumns;
 
 		this.baseRowCount = totalRows;
 		this.rowMap = Array.from({ length: totalRows }, (_, i) => i);
@@ -108,8 +114,7 @@ export class Renderer {
 			(_, i) => this.columns[i]?.width ?? colWidth,
 		);
 		this.rebuildColLeftCache();
-		// Добавить фантомные строки/колонки для бесконечного скролла
-		this.ensureCols(this.totalCols);
+		if (!this.hasExplicitColumns) this.ensureCols(this.totalCols);
 		this.ensureRows(this.baseRowCount);
 		container.classList.add("nt-root");
 
@@ -221,7 +226,11 @@ export class Renderer {
 		this.headerGrid = flat.headerGrid;
 		this.maxDepth = flat.maxDepth || 1;
 		this.totalCols = this.columns.length;
-		this.ensureCols(this.totalCols);
+		this.hasExplicitColumns = columns.length > 0;
+		this.colWidths = Array.from({ length: this.totalCols }, (_, i) => this.columns[i]?.width ?? DEFAULT_COL_WIDTH);
+		if (!this.hasExplicitColumns) this.ensureCols(this.totalCols);
+		this.rebuildColLeftCache();
+		this.needsViewportFill = this.hasExplicitColumns;
 		this.render(true);
 	}
 
@@ -236,7 +245,10 @@ export class Renderer {
 
 	/** Описание колонки по индексу. */
 	getColumn(col: number): ColumnDef | undefined {
-		return this.columns[col];
+		const def = this.columns[col];
+		if (def) return def;
+		if (this.hasExplicitColumns) return { type: "text", readOnly: true };
+		return undefined;
 	}
 
 	/** Подсветка заголовков строк/столбцов, попадающих в выделение */
@@ -371,10 +383,12 @@ export class Renderer {
 			this.ensureRows(this.totalRows + EXPAND_ROWS_BY - 1);
 		}
 
-		// Расширить колонки вправо
-		const lastColLeft = this.colLeft(this.totalCols);
-		if (viewRight + clientWidth > lastColLeft) {
-			this.ensureCols(this.totalCols + EXPAND_COLS_BY - 1);
+		// Расширить колонки вправо (только без явных колонок)
+		if (!this.hasExplicitColumns) {
+			const lastColLeft = this.colLeft(this.totalCols);
+			if (viewRight + clientWidth > lastColLeft) {
+				this.ensureCols(this.totalCols + EXPAND_COLS_BY - 1);
+			}
 		}
 	}
 
@@ -492,6 +506,22 @@ export class Renderer {
 	 * Заголовки перекладываются всегда (скролл-оффсет меняется).
 	 */
 	render(force = false): void {
+		// Заполнить viewport фантомными колонками при первом рендере с явными колонками
+		if (this.needsViewportFill) {
+			const bodyW = this.bodyDiv.clientWidth;
+			if (bodyW > 0) {
+				const totalW = this.totalWidth();
+				if (totalW < bodyW) {
+					const colW = this.colWidths[0] ?? DEFAULT_COL_WIDTH;
+					const count = Math.ceil((bodyW - totalW) / colW);
+					for (let i = 0; i < count; i++) this.colWidths.push(colW);
+					this.totalCols = this.colWidths.length;
+					this.rebuildColLeftCache();
+					this.updateContainerSizes();
+				}
+				this.needsViewportFill = false;
+			}
+		}
 		const { sr, er, sc, ec } = this.computeWindow();
 		const windowChanged =
 			force ||

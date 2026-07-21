@@ -26,7 +26,7 @@ export const BUFFER_COLS = 4;
 export const OVERSCAN_ROWS = 200;
 
 /** Количество «фантомных» колонок правее последней для бесконечного скролла */
-export const OVERSCAN_COLS = 20;
+export const OVERSCAN_COLS = 50;
 
 /** На сколько строк расширяться при скролле к границе */
 export const EXPAND_ROWS_BY = 100;

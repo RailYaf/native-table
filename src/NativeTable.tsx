@@ -86,7 +86,7 @@ export function NativeTable({
 	}, [initialData]);
 
 	useEffect(() => {
-		if (sheetRef.current && columns) sheetRef.current.setColumns(columns);
+		if (sheetRef.current) sheetRef.current.setColumns(columns ?? []);
 	}, [columns]);
 
 	// ── Обработчик тулбара: делегирование по data-action ───────────────────────
