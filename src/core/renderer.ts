@@ -140,7 +140,7 @@ export class Renderer {
 			applyStyle(row, {
 				position: "absolute",
 				top: `${r * HEADER_ROW_HEIGHT}px`,
-				left: `${HEADER_WIDTH}px`,
+				left: "0",
 				right: "0",
 				height: `${HEADER_ROW_HEIGHT}px`,
 				overflow: "hidden",
@@ -171,7 +171,7 @@ export class Renderer {
 		applyStyle(this.bodyDiv, {
 			position: "absolute",
 			top: `${this.headerH}px`,
-			left: `${HEADER_WIDTH}px`,
+			left: "0",
 			right: "0",
 			bottom: "0",
 			overflow: "auto",
@@ -194,7 +194,7 @@ export class Renderer {
 		applyStyle(this.cellsLayer, {
 			position: "absolute",
 			top: "0",
-			left: "0",
+			left: `${HEADER_WIDTH}px`,
 			width: `${this.totalWidth()}px`,
 			height: `${this.totalHeight()}px`,
 		});
@@ -512,12 +512,12 @@ export class Renderer {
 	render(force = false): void {
 		// Заполнить viewport фантомными колонками при первом рендере с явными колонками
 		if (this.needsViewportFill) {
-			const bodyW = this.bodyDiv.clientWidth;
+			const bodyW = this.bodyDiv.offsetWidth;
 			if (bodyW > 0) {
 				const totalW = this.totalWidth();
 				if (totalW < bodyW) {
 					const colW = this.colWidths[0] ?? DEFAULT_COL_WIDTH;
-					const count = Math.ceil((bodyW - totalW) / colW);
+					const count = Math.ceil((bodyW - totalW) / colW) + 1; // +1 чтобы точно без зазора
 					for (let i = 0; i < count; i++) this.colWidths.push(colW);
 					this.totalCols = this.colWidths.length;
 					this.rebuildColLeftCache();
@@ -784,7 +784,7 @@ export class Renderer {
 				label.textContent = cellInfo.label;
 				el.style.width = `${spanWidth}px`;
 				el.style.height = `${cellInfo.rowSpan * HEADER_ROW_HEIGHT}px`;
-				el.style.left = `${this.colLeft(cellInfo.col) - sl}px`;
+				el.style.left = `${HEADER_WIDTH + this.colLeft(cellInfo.col) - sl}px`;
 				el.style.display = "";
 				el.dataset.col = String(cellInfo.col);
 				el.dataset.colSpan = String(cellInfo.colSpan);
