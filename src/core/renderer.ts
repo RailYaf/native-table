@@ -140,7 +140,7 @@ export class Renderer {
 				left: `${HEADER_WIDTH}px`,
 				right: "0",
 				height: `${HEADER_ROW_HEIGHT}px`,
-				overflow: "visible",
+				overflow: "hidden",
 				zIndex: String(5 + (this.maxDepth - r)),
 			});
 			container.append(row);
@@ -611,9 +611,10 @@ export class Renderer {
 		}
 		let ec = sc;
 		let acc = 0;
+		const colBufW = this.totalCols > 0 ? this.totalWidth() / this.totalCols : DEFAULT_COL_WIDTH;
 		while (
 			ec < this.totalCols &&
-			acc < clientWidth + BUFFER_COLS * (this.colWidths[0] ?? DEFAULT_COL_WIDTH)
+			acc < clientWidth + BUFFER_COLS * colBufW
 		) {
 			acc += this.colWidths[ec];
 			ec++;
