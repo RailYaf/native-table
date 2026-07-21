@@ -570,3 +570,16 @@
 .nt-sf-input + .nt-sf-input {
 	margin-top: 4px;
 }
+
+/* Спиннер загрузки */
+@keyframes nt-spin {
+	to { transform: rotate(360deg); }
+}
+
+.nt-loading-spinner {
+	width: 32px; height: 32px;
+	border: 3px solid #e0e0e0;
+	border-top-color: #2e7d32;
+	border-radius: 50%;
+	animation: nt-spin 0.8s linear infinite;
+}

@@ -730,14 +730,16 @@ export class Renderer {
 					label.className = "nt-header-label";
 					el.append(label);
 
-					if (level === leafLevel && cellInfo.colSpan === 1 && cellInfo.rowSpan === 1) {
+					const cellBottom = level + cellInfo.rowSpan - 1;
+
+					if (cellBottom === leafLevel && cellInfo.colSpan === 1) {
 						const btn = document.createElement("span");
 						btn.className = "nt-header-sort-btn";
 						btn.textContent = "▾";
 						btn.dataset.col = String(cellInfo.col);
 						el.append(btn);
 					}
-					if (cellInfo.colSpan === 1 && cellInfo.rowSpan === 1) {
+					if (cellBottom === leafLevel && cellInfo.colSpan === 1) {
 						const resizer = document.createElement("div");
 						resizer.className = "nt-resize-handle";
 						resizer.dataset.col = String(cellInfo.col);

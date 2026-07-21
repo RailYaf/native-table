@@ -16,8 +16,11 @@ export type { NativeTableProps } from "./NativeTable";
 export type {
 	Cell,
 	CellCoord,
+	CellStyle,
+	ChangeAction,
 	ColumnDef,
 	ColumnType,
+	ScalarCellValue,
 	SelectionRect,
 	SelectOption,
 	NativeSheetOptions,

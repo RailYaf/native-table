@@ -1,5 +1,5 @@
 import { cellKey } from "../utils/cell-addr";
-import type { Cell, ScalarCellValue } from "../utils/types";
+import type { Cell, ChangeAction, ScalarCellValue } from "../utils/types";
 
 // ── Модель данных таблицы ────────────────────────────────────────────────────
 //
@@ -12,7 +12,7 @@ export class SheetModel {
 	private cells = new Map<string, Cell>();
 
 	/** Колбэк, вызываемый при каждом изменении данных (для IndexedDB). */
-	onChange?: (_cells: Record<string, Cell>) => void;
+	onChange?: (_cells: Record<string, Cell>, action?: ChangeAction) => void;
 
 	constructor(initial?: Record<string, Cell>) {
 		if (initial) {
@@ -96,7 +96,7 @@ export class SheetModel {
 				this.cells.set(newKey, cell);
 			}
 		}
-		this.emit();
+		this.emit("insert");
 	}
 
 	/** Удалить строки [from, to] включительно, сдвинув данные вверх. */
@@ -128,11 +128,11 @@ export class SheetModel {
 				this.cells.set(newKey, cell);
 			}
 		}
-		this.emit();
+		this.emit("delete");
 	}
 
-	private emit(): void {
-		this.onChange?.(this.getAll());
+	emit(action: ChangeAction = "edit"): void {
+		this.onChange?.(this.getAll(), action);
 	}
 }
 

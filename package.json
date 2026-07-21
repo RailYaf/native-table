@@ -2,11 +2,10 @@
   "name": "@rshb/native-table",
   "version": "1.0.0",
   "description": "Native spreadsheet component (Excel/Google Sheets clone)",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.tsx",
+  "types": "src/index.tsx",
   "files": [
-    "dist",
-    "src/styles.css"
+    "src"
   ],
   "scripts": {
     "build": "tsc && cp src/styles.css dist/",

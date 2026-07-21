@@ -18,7 +18,13 @@ import type { Cell, NativeSheetOptions } from "./utils/types";
 export interface NativeTableProps extends Omit<NativeSheetOptions, "onChange"> {
 	className?: string;
 	style?: React.CSSProperties;
-	onChange?: (_cells: Record<string, Cell>) => void;
+	onChange?: (_cells: Record<string, Cell>, action?: import("./utils/types").ChangeAction) => void;
+	/** Вызывается при нажатии Сохранить (Ctrl+S / кнопка) с текущими ячейками */
+	onSave?: (cells: Record<string, Cell>) => void;
+	/** Показать спиннер загрузки */
+	loading?: boolean;
+	/** Индексы строк, запрещённых к редактированию */
+	disabledRows?: number[];
 }
 
 /** Основной компонент: тулбар + таблица. */
@@ -37,6 +43,9 @@ export function NativeTable({
 	bufferRows,
 	bufferCols,
 	onChange,
+	onSave,
+	loading = false,
+	disabledRows = [],
 }: NativeTableProps) {
 	/** Ссылка на контейнер таблицы (.nt-container). */
 	const ref = useRef<HTMLDivElement | null>(null);
@@ -45,6 +54,8 @@ export function NativeTable({
 	/** Реф для onChange (чтобы не пересоздавать NativeSheet при смене колбэка). */
 	const onChangeRef = useRef(onChange);
 	onChangeRef.current = onChange;
+	const onSaveRef = useRef(onSave);
+	onSaveRef.current = onSave;
 
 	// Состояние color picker'ов (заливка и текст)
 	const [lastBg, setLastBg] = useState("#c8e6c9");
@@ -58,11 +69,11 @@ export function NativeTable({
 			if (cancelled || !ref.current) return;
 			const sheet = new NativeSheet(ref.current, {
 				rows, cols, columns, tableName, initialData, defaultColWidth, defaultRowHeight,
-				headerWidth, headerHeight, bufferRows, bufferCols,
+				headerWidth, headerHeight, bufferRows, bufferCols, disabledRows,
 				initialWidths: data?.widths as Record<string, number> | undefined,
 				initialHeights: data?.heights as number[] | undefined,
 				initialStyles: data?.styles as Record<string, import("./utils/types").CellStyle> | undefined,
-				onChange: (cells) => onChangeRef.current?.(cells),
+				onChange: (cells, action) => onChangeRef.current?.(cells, action),
 			});
 			sheetRef.current = sheet;
 		});
@@ -84,7 +95,7 @@ export function NativeTable({
 		if (!btn) return;
 			if (btn.dataset.action === "undo") sheetRef.current?.undo();
 		else if (btn.dataset.action === "redo") sheetRef.current?.redo();
-		else if (btn.dataset.action === "save") sheetRef.current?.save();
+		else if (btn.dataset.action === "save") { sheetRef.current?.save(); onSaveRef.current?.(sheetRef.current?.getData() ?? {}); }
 		else if (btn.dataset.action === "wrap") sheetRef.current?.toggleWrap();
 		else if (btn.dataset.action === "bold") sheetRef.current?.toggleBold();
 		else if (btn.dataset.action === "italic") sheetRef.current?.toggleItalic();
@@ -95,8 +106,16 @@ export function NativeTable({
 	// ── Рендер ────────────────────────────────────────────────────────────────
 
 	return (
-		<div className={`nt-table-wrapper ${className ?? ""}`}>
-			{/* Тулбар: кнопки с data-action и data-tooltip для всплывающих подсказок */}
+		<div className={`nt-table-wrapper ${className ?? ""}`} style={{ position: "relative" }}>
+			{loading && (
+				<div style={{
+					position: "absolute", inset: 0, zIndex: 99,
+					background: "rgba(255,255,255,0.6)", display: "flex",
+					alignItems: "center", justifyContent: "center",
+				}}>
+					<div className="nt-loading-spinner" />
+				</div>
+			)}
 			<div className="nt-toolbar" onClick={onToolbar}>
 				<button className="nt-tb-btn nt-tb-save" data-action="save" data-tooltip="Сохранить (Ctrl+S)">💾<span className="nt-tb-dot" style={{display: "none"}} /></button>
 				<span className="nt-tb-sep" />

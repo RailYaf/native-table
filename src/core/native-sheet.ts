@@ -72,12 +72,16 @@ export class NativeSheet {
 	/** Менеджер undo/redo */
 	private _undoMgr = new UndoManager();
 
+	/** Строки, запрещённые к редактированию */
+	private disabledRows: Set<number>;
+
 	constructor(
 		/** Контейнер .nt-root, созданный в NativeTable.tsx */
 		private container: HTMLDivElement,
 		options: NativeSheetOptions,
 	) {
 		this.options = options;
+		this.disabledRows = new Set(options.disabledRows ?? []);
 
 		// ── Инициализация подсистем ──────────────────────────────────────────
 		this.model = new SheetModel(options.initialData);
@@ -757,8 +761,8 @@ export class NativeSheet {
 		if (!found) return;
 
 		const colDef = this.renderer.getColumn(found.col);
-		// boolean и readOnly — не открывают редактор
 		if (isBoolean(colDef) || isReadOnly(colDef)) return;
+		if (this.disabledRows.has(this.toDataRow(found.row))) return;
 
 		this.editor.start(found.row, found.col, colDef, "", false);
 	}
@@ -774,6 +778,7 @@ export class NativeSheet {
 		this._undoMgr.updateNewValue(0, { ...newCell });
 		this._undoMgr.commit();
 		this._updateToolbar();
+		this.model.emit("edit");
 		this.renderer.refreshValues();
 	}
 
@@ -921,6 +926,7 @@ export class NativeSheet {
 			this.renderer.highlightHeaders(this.selection);
 		}
 		this._updateToolbar();
+		this.model.emit(dir);
 	}
 
 	private _updateToolbar(): void {
@@ -1089,6 +1095,7 @@ export class NativeSheet {
 		}
 		this._undoMgr.commit();
 		this._updateToolbar();
+		this.model.emit("fill");
 		this.renderer.refreshValues();
 	}
 
@@ -1103,6 +1110,7 @@ export class NativeSheet {
 			startEdit: (row, col, initial) => {
 				const colDef = this.renderer.getColumn(col);
 				if (isReadOnly(colDef)) return;
+				if (this.disabledRows.has(this.toDataRow(row))) return;
 				this.editor.start(row, col, colDef, initial ?? "", true);
 			},
 			commitEdit: () => this.editor.commit(),
@@ -1178,6 +1186,7 @@ export class NativeSheet {
 		}
 		this._undoMgr.commit();
 		this._updateToolbar();
+		this.model.emit("paste");
 		this.setSelectionNoScroll({
 			start: target,
 			end: { row: target.row + height - 1, col: target.col + width - 1 },
@@ -1198,12 +1207,13 @@ export class NativeSheet {
 				const old = this.model.get(dr, c);
 				const empty = old.value === null || old.value === undefined;
 				this._undoMgr.startBatch(dr, c, empty ? null : { ...old });
-				this.model.set(dr, c, "");
+				this.model.deleteSilent(dr, c);
 				this._undoMgr.updateNewValue(this._undoMgr.batchSize - 1, null);
 			}
 		}
 		this._undoMgr.commit();
 		this._updateToolbar();
+		this.model.emit("clear");
 		this.renderer.refreshValues();
 	}
 

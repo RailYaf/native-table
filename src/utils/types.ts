@@ -3,6 +3,9 @@
 /** Допустимые типы колонок */
 export type ColumnType = "text" | "number" | "boolean" | "select" | "date";
 
+/** Тип действия при изменении данных */
+export type ChangeAction = "edit" | "delete" | "insert" | "clear" | "paste" | "fill" | "undo" | "redo";
+
 export interface SelectOption {
 	value: string | number;
 	label: string;
@@ -71,5 +74,7 @@ export interface NativeSheetOptions {
 	bufferRows?: number;
 	bufferCols?: number;
 	initialData?: Record<string, Cell>;
-	onChange?: (_cells: Record<string, Cell>) => void;
+	onChange?: (_cells: Record<string, Cell>, action?: ChangeAction) => void;
+	/** Индексы строк, запрещённых к редактированию */
+	disabledRows?: number[];
 }
