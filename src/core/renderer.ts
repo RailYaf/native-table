@@ -83,8 +83,6 @@ export class Renderer {
 	disabledRows: Set<number> = new Set();
 	/** Ошибки валидации: cellKey → список сообщений */
 	validationErrors: Record<string, string[]> = {};
-	/** Нужно заполнить viewport фантомными read-only колонками */
-	private needsViewportFill = false;
 	/** Ширины из IndexedDB (восстанавливаются после setColumns) */
 	initialWidths: Record<string, number> = {};
 	selectedRect?: import("../utils/types").SelectionRect;
@@ -113,7 +111,6 @@ export class Renderer {
 		this.totalCols = this.columns.length; // листовые колонки = data-колонки
 		this.hasExplicitColumns = columns.length > 0;
 		this.dataColCount = this.totalCols;
-		this.needsViewportFill = this.hasExplicitColumns;
 
 		this.baseRowCount = totalRows;
 		this.rowMap = Array.from({ length: totalRows }, (_, i) => i);
@@ -247,7 +244,7 @@ export class Renderer {
 		}
 		// Очистить старые DOM-ячейки (могли остаться от overscan)
 		this.resetCellPools();
-		this.needsViewportFill = this.hasExplicitColumns;
+		this.resetCellPools();
 		this.render(true);
 	}
 
@@ -533,7 +530,8 @@ export class Renderer {
 	 */
 	render(force = false): void {
 		// Заполнить viewport фантомными колонками при первом рендере с явными колонками
-		if (this.needsViewportFill) {
+		// Всегда проверять, нужно ли добавить фантомные колонки (при ресайзе окна/колонок)
+		if (this.hasExplicitColumns) {
 			const bodyW = this.bodyDiv.clientWidth;
 			if (bodyW > 0) {
 				const totalW = this.totalWidth();
@@ -545,7 +543,6 @@ export class Renderer {
 					this.rebuildColLeftCache();
 					this.updateContainerSizes();
 				}
-				this.needsViewportFill = false;
 			}
 		}
 		const { sr, er, sc, ec } = this.computeWindow();
