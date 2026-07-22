@@ -99,6 +99,15 @@ export function NativeTable({
 		if (sheetRef.current && columns) sheetRef.current.setColumns(columns ?? []);
 	}, [columns]);
 
+	// ── Ресайз окна: пересчитать фантомные строки/колонки ────────────────────
+	useEffect(() => {
+		const onResize = () => {
+			requestAnimationFrame(() => sheetRef.current?.renderer?.render(true));
+		};
+		window.addEventListener("resize", onResize);
+		return () => window.removeEventListener("resize", onResize);
+	}, []);
+
 	useEffect(() => {
 		if (sheetRef.current) {
 			sheetRef.current.renderer.validationErrors = validationErrors ?? {};

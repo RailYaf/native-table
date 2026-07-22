@@ -128,7 +128,7 @@ export class Renderer {
 		);
 		this.rebuildColLeftCache();
 		if (!this.hasExplicitColumns) this.ensureCols(this.totalCols);
-		this.ensureRows(this.baseRowCount);
+		if (this.allowAddRows) this.ensureRows(this.baseRowCount);
 		container.classList.add("nt-root");
 
 		this.corner = document.createElement("div");
@@ -544,6 +544,28 @@ export class Renderer {
 					this.totalCols = this.colWidths.length;
 				}
 				this.rebuildColLeftCache();
+				this.updateContainerSizes();
+			}
+		}
+		// Заполнить viewport по вертикали (allowAddRows=false)
+		if (!this.allowAddRows) {
+			const bodyH = this.bodyDiv.clientHeight;
+			if (bodyH > 0) {
+				this.rowHeights = this.rowHeights.slice(0, this.initialRowCount);
+				this.rowMap = this.rowMap.slice(0, this.initialRowCount);
+				this.totalRows = this.initialRowCount;
+				const targetH = bodyH - this.headerH; // inner добавляет headerH
+				const totalH = this.totalHeight();
+				if (totalH < targetH) {
+					const count = Math.ceil((targetH - totalH) / DEFAULT_ROW_HEIGHT);
+					for (let i = 0; i < count; i++) {
+						this.rowHeights.push(DEFAULT_ROW_HEIGHT);
+						this.rowMap.push(this.totalRows + i);
+					}
+					this.totalRows = this.rowHeights.length;
+					this.baseRowCount = this.totalRows;
+				}
+				this.rebuildRowTopCache();
 				this.updateContainerSizes();
 			}
 		}
