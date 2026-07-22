@@ -153,7 +153,7 @@ export class Renderer {
 				left: "0",
 				right: "0",
 				height: `${HEADER_ROW_HEIGHT}px`,
-				overflow: "hidden",
+				overflow: "visible",
 				zIndex: String(5 + (this.maxDepth - r)),
 			});
 			container.append(row);
@@ -250,19 +250,7 @@ export class Renderer {
 			if (idx < this.totalCols) this.colWidths[idx] = Math.max(30, w);
 		}
 		// Очистить старые DOM-ячейки (могли остаться от overscan)
-		this.resetCellPools();
-		this.resetCellPools();
 		this.render(true);
-	}
-
-	private resetCellPools(): void {
-		for (const pool of this.rows) {
-			for (const cell of pool.cells) cell.remove();
-			pool.cells = [];
-		}
-		for (const row of this.headerRows) {
-			row.innerHTML = "";
-		}
 	}
 
 	private dataRow(displayRow: number): number {
