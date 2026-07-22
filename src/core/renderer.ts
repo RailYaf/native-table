@@ -75,10 +75,14 @@ export class Renderer {
 	rowMap: number[] = [];
 	/** Базовое количество строк (без учёта фильтра) */
 	baseRowCount: number;
+	/** Исходное количество строк (до overscan) — для маркировки фантомных */
+	initialRowCount = 0;
 	/** Есть ли явно заданные колонки (не дефолтный режим A,B,C...) */
 	hasExplicitColumns = false;
 	/** Количество data-колонок (без фантомных) */
 	dataColCount = 0;
+	/** Разрешить добавление новых строк при скролле */
+	allowAddRows = true;
 	/** Индексы заблокированных строк */
 	disabledRows: Set<number> = new Set();
 	/** Ошибки валидации: cellKey → список сообщений */
@@ -95,12 +99,14 @@ export class Renderer {
 		colWidth = DEFAULT_COL_WIDTH,
 		rowH = DEFAULT_ROW_HEIGHT,
 		columns: ColumnDef[] = [],
+		allowAddRows = true,
 	) {
 		this.rowHeights = new Array(totalRows).fill(rowH);
 		this.rebuildRowTopCache();
 		this.container = container;
 		this.model = model;
 		this.columns = columns;
+		this.allowAddRows = allowAddRows;
 
 		// Развернуть иерархию колонок (если есть children)
 		const flat = flattenColumns(columns);
@@ -113,6 +119,7 @@ export class Renderer {
 		this.dataColCount = this.totalCols;
 
 		this.baseRowCount = totalRows;
+		this.initialRowCount = totalRows;
 		this.rowMap = Array.from({ length: totalRows }, (_, i) => i);
 		// Инициализация ширин: берём из ColumnDef, если задана, иначе defaultColWidth
 		this.colWidths = Array.from(
@@ -752,12 +759,14 @@ export class Renderer {
 			el.dataset.col = String(c);
 			el.dataset.row = String(row);
 			const isPhantom = this.hasExplicitColumns && !colDef;
-			const isDisabledRow = this.disabledRows.has(this.dataRow(row));
+			const isOverscanRow = !this.allowAddRows && row >= this.initialRowCount;
+			const isDisabledRow = this.disabledRows.has(this.dataRow(row)) || isOverscanRow;
 			const isReadOnlyCol = !!colDef?.readOnly && !isPhantom;
 			el.classList.toggle("nt-cell--readonly", isPhantom);
 			el.classList.toggle("nt-cell--disabled", isDisabledRow);
+			el.classList.toggle("nt-cell--phantom-row", isOverscanRow);
 			el.classList.toggle("nt-cell--readonly-col", isReadOnlyCol);
-			el.style.cursor = isPhantom ? "default" : "";
+			el.style.cursor = (isPhantom || isOverscanRow) ? "default" : "";
 			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef);
 			// Индикатор ошибки валидации
 			this.updateCellError(el, c, this.dataRow(row));
@@ -887,14 +896,22 @@ export class Renderer {
 			el.style.top = `${this.rowTop(r) - st}px`;
 			el.style.display = "";
 			el.dataset.row = String(r);
-			// Resize handle for row
-			let rh = el.querySelector(".nt-resize-handle-row") as HTMLElement | null;
-			if (!rh) {
-				rh = document.createElement("div");
-				rh.className = "nt-resize-handle nt-resize-handle-row";
-				rh.dataset.row = String(r);
-				el.append(rh);
+			const isOverscan = !this.allowAddRows && r >= this.initialRowCount;
+			// Resize handle — только не для фантомных строк
+			if (!isOverscan) {
+				let rh = el.querySelector(".nt-resize-handle-row") as HTMLElement | null;
+				if (!rh) {
+					rh = document.createElement("div");
+					rh.className = "nt-resize-handle nt-resize-handle-row";
+					rh.dataset.row = String(r);
+					el.append(rh);
+				}
+			} else {
+				const rh = el.querySelector(".nt-resize-handle-row") as HTMLElement | null;
+				if (rh) rh.remove();
 			}
+			el.classList.toggle("nt-header-cell--disabled", isOverscan);
+			el.style.cursor = isOverscan ? "default" : "";
 			this.toggleHeaderClass(el, r, "row");
 		}
 		for (let i = needed; i < this.headerCol.children.length; i++) {

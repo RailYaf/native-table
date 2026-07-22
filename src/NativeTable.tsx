@@ -27,6 +27,8 @@ export interface NativeTableProps extends Omit<NativeSheetOptions, "onChange"> {
 	disabledRows?: number[];
 	/** Ошибки валидации: cellKey → сообщения */
 	validationErrors?: Record<string, string[]>;
+	/** Разрешить бесконечное добавление строк. false = только данные из dataSource */
+	allowAddRows?: boolean;
 }
 
 /** Основной компонент: тулбар + таблица. */
@@ -49,6 +51,7 @@ export function NativeTable({
 	loading = false,
 	disabledRows = [],
 	validationErrors,
+	allowAddRows = true,
 }: NativeTableProps) {
 	/** Ссылка на контейнер таблицы (.nt-container). */
 	const ref = useRef<HTMLDivElement | null>(null);
@@ -74,7 +77,7 @@ export function NativeTable({
 			if (cancelled || !ref.current) return;
 			const sheet = new NativeSheet(ref.current, {
 				rows, cols, columns, tableName, initialData, defaultColWidth, defaultRowHeight,
-				headerWidth, headerHeight, bufferRows, bufferCols, disabledRows,
+				headerWidth, headerHeight, bufferRows, bufferCols, disabledRows, allowAddRows,
 				initialWidths: data?.widths as Record<string, number> | undefined,
 				initialHeights: data?.heights as number[] | undefined,
 				initialStyles: data?.styles as Record<string, import("./utils/types").CellStyle> | undefined,

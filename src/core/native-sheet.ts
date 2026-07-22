@@ -99,6 +99,7 @@ export class NativeSheet {
 			options.defaultColWidth,
 			options.defaultRowHeight,
 			options.columns ?? [],
+			options.allowAddRows,
 		);
 		this.renderer.disabledRows = this.disabledRows;
 
@@ -725,6 +726,7 @@ export class NativeSheet {
 		// Заголовок строки — выделить всю строку (без скролла)
 		const rowHeader = target.closest(".nt-header-cell") as HTMLElement;
 		if (rowHeader?.dataset.row !== undefined) {
+			if (rowHeader.classList.contains("nt-header-cell--disabled")) return;
 			const row = Number(rowHeader.dataset.row);
 			if (!Number.isNaN(row)) {
 				const maxCol = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
@@ -756,9 +758,10 @@ export class NativeSheet {
 
 		const { row, col } = found;
 
-		// Фантомные колонки не выделяются
+		// Фантомные колонки/строки не выделяются
 		const cellEl = target.closest(".nt-cell") as HTMLElement;
 		if (cellEl?.classList.contains("nt-cell--readonly")) return;
+		if (cellEl?.classList.contains("nt-cell--phantom-row")) return;
 
 		if (this.editor.isActive()) this.editor.commit();
 

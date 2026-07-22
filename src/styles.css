@@ -200,6 +200,11 @@
 	color: #2e7d32;
 }
 
+.nt-header-cell--disabled {
+	background: #f5f5f5;
+	color: #bbb;
+}
+
 .nt-header-cell--phantom,
 .nt-header-row .nt-header-cell--phantom {
 	background: #f0f0f0;
@@ -353,9 +358,17 @@
 }
 
 /* Disabled row: та же заливка + светлый текст */
-.nt-cell--disabled {
+.nt-cell--disabled,
+.nt-cell--phantom-row {
 	background: #f5f5f5;
 	color: #bbb;
+}
+
+.nt-cell--phantom-row {
+	cursor: default;
+}
+.nt-cell--phantom-row:hover {
+	background: #f5f5f5;
 }
 
 /* ReadOnly колонка: только светлый текст */

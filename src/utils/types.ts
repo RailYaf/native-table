@@ -79,4 +79,6 @@ export interface NativeSheetOptions {
 	onChange?: (allCells: Record<string, Cell>, changedCells: Record<string, { old: Cell | null; new: Cell | null }>, action?: ChangeAction) => void;
 	/** Индексы строк, запрещённых к редактированию */
 	disabledRows?: number[];
+	/** Разрешить бесконечное добавление строк. false = только dataSource */
+	allowAddRows?: boolean;
 }
