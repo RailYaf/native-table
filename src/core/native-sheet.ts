@@ -102,7 +102,10 @@ export class NativeSheet {
 		this.renderer.disabledRows = this.disabledRows;
 
 		// Применить начальные ширины/высоты/стили из IndexedDB
-		if (options.initialWidths) for (const [c, w] of Object.entries(options.initialWidths)) this.renderer.setColWidth(Number(c), w);
+		if (options.initialWidths) {
+			this.renderer.initialWidths = options.initialWidths;
+			for (const [c, w] of Object.entries(options.initialWidths)) this.renderer.setColWidth(Number(c), w);
+		}
 		if (options.initialHeights) this.renderer.setRowHeights(options.initialHeights);
 		if (options.initialStyles) this.applyStyles(options.initialStyles);
 

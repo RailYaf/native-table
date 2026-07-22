@@ -85,6 +85,8 @@ export class Renderer {
 	validationErrors: Record<string, string[]> = {};
 	/** Нужно заполнить viewport фантомными read-only колонками */
 	private needsViewportFill = false;
+	/** Ширины из IndexedDB (восстанавливаются после setColumns) */
+	initialWidths: Record<string, number> = {};
 	selectedRect?: import("../utils/types").SelectionRect;
 
 	constructor(
@@ -238,6 +240,10 @@ export class Renderer {
 		this.colWidths = Array.from({ length: this.totalCols }, (_, i) => this.columns[i]?.width ?? DEFAULT_COL_WIDTH);
 		if (!this.hasExplicitColumns) this.ensureCols(this.totalCols);
 		this.rebuildColLeftCache();
+		// Восстановить ширины из IndexedDB
+		for (const [c, w] of Object.entries(this.initialWidths)) {
+			this.colWidths[Number(c)] = Math.max(30, w);
+		}
 		this.needsViewportFill = this.hasExplicitColumns;
 		this.render(true);
 	}
