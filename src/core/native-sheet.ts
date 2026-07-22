@@ -888,7 +888,6 @@ export class NativeSheet {
 	 * Записывает в undo-стек, обновляет тулбар и перерисовывает.
 	 */
 	private applyStyle(style: Partial<import("../utils/types").CellStyle>): void {
-		if (this.renderer.readonlyTable) return;
 		if (!this.selection.start || !this.selection.end) return;
 		const sr = Math.min(this.selection.start.row, this.selection.end.row);
 		const er = Math.max(this.selection.start.row, this.selection.end.row);
