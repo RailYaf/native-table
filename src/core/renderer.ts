@@ -240,12 +240,25 @@ export class Renderer {
 		this.colWidths = Array.from({ length: this.totalCols }, (_, i) => this.columns[i]?.width ?? DEFAULT_COL_WIDTH);
 		if (!this.hasExplicitColumns) this.ensureCols(this.totalCols);
 		this.rebuildColLeftCache();
-		// Восстановить ширины из IndexedDB
+		// Восстановить ширины из IndexedDB (только в пределах текущих колонок)
 		for (const [c, w] of Object.entries(this.initialWidths)) {
-			this.colWidths[Number(c)] = Math.max(30, w);
+			const idx = Number(c);
+			if (idx < this.totalCols) this.colWidths[idx] = Math.max(30, w);
 		}
+		// Очистить старые DOM-ячейки (могли остаться от overscan)
+		this.resetCellPools();
 		this.needsViewportFill = this.hasExplicitColumns;
 		this.render(true);
+	}
+
+	private resetCellPools(): void {
+		for (const pool of this.rows) {
+			for (const cell of pool.cells) cell.remove();
+			pool.cells = [];
+		}
+		for (const row of this.headerRows) {
+			row.innerHTML = "";
+		}
 	}
 
 	private dataRow(displayRow: number): number {
@@ -315,10 +328,9 @@ export class Renderer {
 
 	/** Установить ширину колонки (мин. 30px). Перестраивает colLeftCache и ширины контейнеров. */
 	setColWidth(col: number, width: number): void {
+		if (this.hasExplicitColumns && col >= this.dataColCount) return;
 		this.colWidths[col] = Math.max(30, width);
 		this.rebuildColLeftCache();
-		this.updateContainerSizes();
-		this.render(true);
 	}
 
 	getColWidth(col: number): number {
@@ -407,7 +419,7 @@ export class Renderer {
 	}
 
 	/** Обновить размеры всех контейнеров (после изменения totalHeight/totalWidth). */
-	private updateContainerSizes(): void {
+	updateContainerSizes(): void {
 		const h = this.totalHeight();
 		const w = this.totalWidth();
 		this.inner.style.height = `${this.headerH + h}px`;
@@ -522,12 +534,12 @@ export class Renderer {
 	render(force = false): void {
 		// Заполнить viewport фантомными колонками при первом рендере с явными колонками
 		if (this.needsViewportFill) {
-			const bodyW = this.bodyDiv.offsetWidth;
+			const bodyW = this.bodyDiv.clientWidth;
 			if (bodyW > 0) {
 				const totalW = this.totalWidth();
 				if (totalW < bodyW) {
 					const colW = this.colWidths[0] ?? DEFAULT_COL_WIDTH;
-					const count = Math.ceil((bodyW - totalW) / colW) + 1; // +1 чтобы точно без зазора
+					const count = Math.ceil((bodyW - totalW) / colW);
 					for (let i = 0; i < count; i++) this.colWidths.push(colW);
 					this.totalCols = this.colWidths.length;
 					this.rebuildColLeftCache();
@@ -591,7 +603,7 @@ export class Renderer {
 		}
 	}
 
-	private rebuildColLeftCache(): void {
+	rebuildColLeftCache(): void {
 		this.colLeftCache = new Array(this.totalCols + 1).fill(0);
 		for (let i = 0; i < this.totalCols; i++) {
 			this.colLeftCache[i + 1] = this.colLeftCache[i] + this.colWidths[i];

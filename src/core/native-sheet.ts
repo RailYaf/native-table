@@ -105,6 +105,8 @@ export class NativeSheet {
 		if (options.initialWidths) {
 			this.renderer.initialWidths = options.initialWidths;
 			for (const [c, w] of Object.entries(options.initialWidths)) this.renderer.setColWidth(Number(c), w);
+			this.renderer.rebuildColLeftCache();
+			this.renderer.updateContainerSizes();
 		}
 		if (options.initialHeights) this.renderer.setRowHeights(options.initialHeights);
 		if (options.initialStyles) this.applyStyles(options.initialStyles);
@@ -955,6 +957,8 @@ export class NativeSheet {
 		}
 		this.renderer.refreshValues();
 		if (hasLayout) {
+			this.renderer.updateContainerSizes();
+			this.renderer.render(true);
 			this.overlay.update(this.selection);
 			this.renderer.highlightHeaders(this.selection);
 		}
@@ -1331,6 +1335,8 @@ export class NativeSheet {
 		const onMove = (ev: MouseEvent) => {
 			const delta = ev.clientX - this.resizeStartX;
 			this.renderer.setColWidth(this.resizingCol, Math.max(30, this.resizeStartWidth + delta));
+			this.renderer.updateContainerSizes();
+			this.renderer.render(true);
 			this.renderer.render(true);
 			this.overlay.update(this.selection);
 		};
@@ -1372,7 +1378,8 @@ export class NativeSheet {
 
 	private saveColumnWidths(): void {
 		const widths: Record<string, number> = {};
-		for (let c = 0; c < this.renderer.totalCols; c++) widths[String(c)] = this.renderer.getColWidth(c);
+		const limit = this.renderer.hasExplicitColumns ? this.renderer.dataColCount : this.renderer.totalCols;
+		for (let c = 0; c < limit; c++) widths[String(c)] = this.renderer.getColWidth(c);
 		const heights = this.renderer.getRowHeights();
 		const styles = this.collectStyles();
 		saveState(this.options.tableName, { widths, heights, styles });
