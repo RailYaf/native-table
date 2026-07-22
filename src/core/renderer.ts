@@ -75,8 +75,6 @@ export class Renderer {
 	rowMap: number[] = [];
 	/** Базовое количество строк (без учёта фильтра) */
 	baseRowCount: number;
-	/** Исходное количество строк (до overscan) */
-	initialRowCount = 0;
 	/** Есть ли явно заданные колонки (не дефолтный режим A,B,C...) */
 	hasExplicitColumns = false;
 	/** Количество data-колонок (без фантомных) */
@@ -115,7 +113,6 @@ export class Renderer {
 		this.dataColCount = this.totalCols;
 
 		this.baseRowCount = totalRows;
-		this.initialRowCount = totalRows;
 		this.rowMap = Array.from({ length: totalRows }, (_, i) => i);
 		// Инициализация ширин: берём из ColumnDef, если задана, иначе defaultColWidth
 		this.colWidths = Array.from(
@@ -393,6 +390,7 @@ export class Renderer {
 		this.totalCols = this.colWidths.length;
 		this.rebuildColLeftCache();
 	}
+
 
 	/**
 	 * Автоматически расширить строки/колонки при скролле к границе.
