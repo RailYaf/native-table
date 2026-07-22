@@ -83,6 +83,8 @@ export class Renderer {
 	dataColCount = 0;
 	/** Разрешить добавление новых строк при скролле */
 	allowAddRows = true;
+	/** Таблица только для чтения */
+	readonlyTable = false;
 	/** Индексы заблокированных строк */
 	disabledRows: Set<number> = new Set();
 	/** Ошибки валидации: cellKey → список сообщений */
@@ -779,7 +781,7 @@ export class Renderer {
 			const isPhantom = this.hasExplicitColumns && !colDef;
 			const isOverscanRow = !this.allowAddRows && row >= this.initialRowCount;
 			const isDisabledRow = this.disabledRows.has(this.dataRow(row)) || isOverscanRow;
-			const isReadOnlyCol = !!colDef?.readOnly && !isPhantom;
+			const isReadOnlyCol = !this.readonlyTable && !!colDef?.readOnly && !isPhantom && !isOverscanRow;
 			el.classList.toggle("nt-cell--phantom", isPhantom || isOverscanRow);
 			el.classList.toggle("nt-cell--disabled", isDisabledRow);
 			el.classList.toggle("nt-cell--readonly", isReadOnlyCol);

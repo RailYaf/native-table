@@ -29,6 +29,8 @@ export interface NativeTableProps extends Omit<NativeSheetOptions, "onChange"> {
 	validationErrors?: Record<string, string[]>;
 	/** Разрешить бесконечное добавление строк. false = только данные из dataSource */
 	allowAddRows?: boolean;
+	/** Таблица только для чтения (все ячейки — readonly, только Copy в меню) */
+	readonly?: boolean;
 }
 
 /** Основной компонент: тулбар + таблица. */
@@ -52,6 +54,7 @@ export function NativeTable({
 	disabledRows = [],
 	validationErrors,
 	allowAddRows = true,
+	readonly: readOnlyTable,
 }: NativeTableProps) {
 	/** Ссылка на контейнер таблицы (.nt-container). */
 	const ref = useRef<HTMLDivElement | null>(null);
@@ -84,6 +87,7 @@ export function NativeTable({
 				onChange: (cells, changed, action) => onChangeRef.current?.(cells, changed, action),
 			});
 			sheetRef.current = sheet;
+			sheet.renderer.readonlyTable = readOnlyTable ?? false;
 			sheet.renderer.validationErrors = validationErrorsRef.current ?? {};
 			sheet.renderer.render(true);
 		});
