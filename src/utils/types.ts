@@ -81,4 +81,6 @@ export interface NativeSheetOptions {
 	disabledRows?: number[];
 	/** Разрешить бесконечное добавление строк. false = только dataSource */
 	allowAddRows?: boolean;
+	/** Таблица только для чтения */
+	readonly?: boolean;
 }

@@ -84,13 +84,14 @@ export function NativeTable({
 			const sheet = new NativeSheet(ref.current, {
 				rows, cols, columns, tableName, initialData, defaultColWidth, defaultRowHeight,
 				headerWidth, headerHeight, bufferRows, bufferCols, disabledRows, allowAddRows,
+				readonly: readOnlyTable,
 				initialWidths: data?.widths as Record<string, number> | undefined,
 				initialHeights: data?.heights as number[] | undefined,
 				initialStyles: data?.styles as Record<string, import("./utils/types").CellStyle> | undefined,
 				onChange: (cells, changed, action) => onChangeRef.current?.(cells, changed, action),
 			});
 			sheetRef.current = sheet;
-			sheet.renderer.readonlyTable = readOnlyTable ?? false;
+			sheet.renderer.validationErrors = validationErrorsRef.current ?? {};
 			sheet.renderer.validationErrors = validationErrorsRef.current ?? {};
 			sheet.renderer.render(true);
 		});

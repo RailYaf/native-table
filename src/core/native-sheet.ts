@@ -100,6 +100,7 @@ export class NativeSheet {
 			options.defaultRowHeight,
 			options.columns ?? [],
 			options.allowAddRows,
+			options.readonly,
 		);
 		this.renderer.disabledRows = this.disabledRows;
 

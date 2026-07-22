@@ -102,6 +102,7 @@ export class Renderer {
 		rowH = DEFAULT_ROW_HEIGHT,
 		columns: ColumnDef[] = [],
 		allowAddRows = true,
+		readonlyTable = false,
 	) {
 		this.rowHeights = new Array(totalRows).fill(rowH);
 		this.rebuildRowTopCache();
@@ -109,6 +110,7 @@ export class Renderer {
 		this.model = model;
 		this.columns = columns;
 		this.allowAddRows = allowAddRows;
+		this.readonlyTable = readonlyTable;
 
 		// Развернуть иерархию колонок (если есть children)
 		const flat = flattenColumns(columns);
