@@ -816,6 +816,7 @@ export class NativeSheet {
 		const found = this.cellAtEvent(e);
 		if (!found) return;
 
+		if (this.renderer.readonlyTable) return;
 		const colDef = this.renderer.getColumn(found.col);
 		if (isBoolean(colDef) || isReadOnly(colDef)) return;
 		if (this.disabledRows.has(this.toDataRow(found.row))) return;
@@ -824,6 +825,7 @@ export class NativeSheet {
 	}
 
 	private toggleBoolean(row: number, col: number): void {
+		if (this.renderer.readonlyTable) return;
 		const dr = this.toDataRow(row);
 		const cell = this.model.get(dr, col);
 		const current = cell.value;
@@ -886,6 +888,7 @@ export class NativeSheet {
 	 * Записывает в undo-стек, обновляет тулбар и перерисовывает.
 	 */
 	private applyStyle(style: Partial<import("../utils/types").CellStyle>): void {
+		if (this.renderer.readonlyTable) return;
 		if (!this.selection.start || !this.selection.end) return;
 		const sr = Math.min(this.selection.start.row, this.selection.end.row);
 		const er = Math.max(this.selection.start.row, this.selection.end.row);
@@ -1207,7 +1210,8 @@ export class NativeSheet {
 			maxCol: this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0 ? this.renderer.dataColCount - 1 : undefined,
 			isEditing: false,
 			setSelection: (rect) => this.setSelection(rect),
-			startEdit: (row, col, initial) => {
+		startEdit: (row, col, initial) => {
+				if (this.renderer.readonlyTable) return;
 				const colDef = this.renderer.getColumn(col);
 				if (isReadOnly(colDef)) return;
 				if (this.disabledRows.has(this.toDataRow(row))) return;
@@ -1216,8 +1220,8 @@ export class NativeSheet {
 			commitEdit: () => this.editor.commit(),
 			cancelEdit: () => this.handleEscape(),
 			onCopy: () => this.copy(),
-			onPaste: () => this.paste(),
-			onDelete: () => this.deleteSelection(),
+			onPaste: () => { if (!this.renderer.readonlyTable) this.paste(); },
+			onDelete: () => { if (!this.renderer.readonlyTable) this.deleteSelection(); },
 			onUndo: () => this.undo(),
 			onRedo: () => this.redo(),
 			onSave: () => this.save(),
