@@ -50,7 +50,7 @@ export class SelectionOverlay {
 		// Fill handle: квадратик 6x6 в правом нижнем углу
 		this.fillHandle.style.left = `${right - 4}px`;
 		this.fillHandle.style.top = `${bottom - 4}px`;
-		this.fillHandle.style.display = "block";
+		this.fillHandle.style.display = this.renderer.readonlyTable ? "none" : "block";
 	}
 
 	/** Показать пунктирную рамку копирования (после Ctrl+C). */
