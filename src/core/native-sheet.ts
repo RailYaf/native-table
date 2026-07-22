@@ -693,9 +693,12 @@ export class NativeSheet {
 			const maxCol = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
 				? this.renderer.dataColCount - 1
 				: this.renderer.totalCols - 1;
+			const maxRow = !this.renderer.allowAddRows && this.renderer.initialRowCount > 0
+				? this.renderer.initialRowCount - 1
+				: this.renderer.totalRows - 1;
 			this.setSelectionNoScroll({
 				start: { row: 0, col: 0 },
-				end: { row: this.renderer.totalRows - 1, col: maxCol },
+				end: { row: maxRow, col: maxCol },
 			});
 			this.container.focus();
 			return;
@@ -709,13 +712,16 @@ export class NativeSheet {
 			const span = Number(colHeader.dataset.colSpan) || 1;
 			if (!Number.isNaN(col)) {
 				const endCol = col + span - 1;
+				const maxRow = !this.renderer.allowAddRows && this.renderer.initialRowCount > 0
+					? this.renderer.initialRowCount - 1
+					: this.renderer.totalRows - 1;
 				if (e.shiftKey && this.selection.start) {
-					const end = { row: this.renderer.totalRows - 1, col: endCol };
+					const end = { row: maxRow, col: endCol };
 					this.setSelectionNoScroll({ start: this.selection.start, end });
 				} else {
 					this.setSelectionNoScroll({
 						start: { row: 0, col },
-						end: { row: this.renderer.totalRows - 1, col: endCol },
+						end: { row: maxRow, col: endCol },
 					});
 					this.startDrag("col");
 				}
@@ -1009,19 +1015,22 @@ export class NativeSheet {
 			const found = this.renderer.cellAt(x, y);
 			if (found && this.selection.start) {
 				const end = { ...found };
+				const maxRow = !this.renderer.allowAddRows && this.renderer.initialRowCount > 0
+					? this.renderer.initialRowCount - 1
+					: this.renderer.totalRows - 1;
 				if (axis === "row") {
 					end.col = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
 						? this.renderer.dataColCount - 1
 						: this.renderer.totalCols - 1;
 					this.selection.start = { row: this.selection.start.row, col: 0 };
 				} else if (axis === "col") {
-					end.row = this.renderer.visibleRowCount() - 1;
+					end.row = maxRow;
 					this.selection.start = { row: 0, col: this.selection.start.col };
 				} else {
-					// Обычный драг: не заходить на фантомные колонки
 					if (this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0 && end.col >= this.renderer.dataColCount) {
 						end.col = this.renderer.dataColCount - 1;
 					}
+					if (end.row > maxRow) end.row = maxRow;
 				}
 				this.setSelectionNoScroll({ start: this.selection.start, end });
 			}
@@ -1054,15 +1063,18 @@ export class NativeSheet {
 				ev.clientY - bodyRect.top,
 			);
 			if (!found) return;
-			// Не протягивать на фантомные колонки
+			// Не протягивать на фантомные колонки/строки
 			const maxCol = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
 				? this.renderer.dataColCount - 1
 				: this.renderer.totalCols - 1;
+			const maxRow = !this.renderer.allowAddRows && this.renderer.initialRowCount > 0
+				? this.renderer.initialRowCount - 1
+				: this.renderer.totalRows - 1;
 			let newTop = srcTop;
 			let newBottom = srcBottom;
 			let newLeft = srcLeft;
 			let newRight = srcRight;
-			if (found.row > srcBottom) newBottom = found.row;
+			if (found.row > srcBottom) newBottom = Math.min(found.row, maxRow);
 			else if (found.row < srcTop) newTop = found.row;
 			if (found.col > srcRight) newRight = Math.min(found.col, maxCol);
 			else if (found.col < srcLeft) newLeft = found.col;
@@ -1104,10 +1116,14 @@ export class NativeSheet {
 		srcLeft: number,
 		srcRight: number,
 	): void {
-		// Не заходить на фантомные колонки
+		// Не заходить на фантомные колонки/строки
 		if (this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0) {
 			right = Math.min(right, this.renderer.dataColCount - 1);
 			left = Math.min(left, this.renderer.dataColCount - 1);
+		}
+		if (!this.renderer.allowAddRows && this.renderer.initialRowCount > 0) {
+			bottom = Math.min(bottom, this.renderer.initialRowCount - 1);
+			top = Math.min(top, this.renderer.initialRowCount - 1);
 		}
 		const srcH = srcBottom - srcTop + 1;
 		const changedCells: Record<string, { old: Cell | null; new: Cell | null }> = {};
