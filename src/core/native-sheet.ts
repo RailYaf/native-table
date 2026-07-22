@@ -18,7 +18,7 @@ import { UndoManager } from "../services/undo-manager";
 import { saveState } from "../services/storage";
 import { cellKey } from "../utils/cell-addr";
 import { DEFAULT_ROW_HEIGHT } from "../utils/consts";
-import { formatCellDisplay, isBoolean, isReadOnly } from "../utils/column-utils";
+import { formatCellDisplay, getCellAlign, isBoolean, isReadOnly } from "../utils/column-utils";
 import { Editor } from "../ui/editor";
 import { handleKeyboard } from "../ui/keyboard";
 import { SheetModel } from "./model";
@@ -930,6 +930,9 @@ export class NativeSheet {
 		popup.style.padding = "6px";
 
 		const style = this.getFirstSelectedStyle();
+		const selCol = this.selection.start?.col;
+		const colDef = selCol !== undefined ? this.renderer.getColumn(selCol) : undefined;
+		const defaultAlign = getCellAlign(colDef);
 		const makeBtn = (icon: string, tooltip: string, action: () => void, active?: boolean) => {
 			const btn = document.createElement("div");
 			btn.className = "nt-tb-btn";
@@ -944,9 +947,10 @@ export class NativeSheet {
 		const row1 = document.createElement("div");
 		row1.style.display = "flex";
 		row1.style.gap = "2px";
-		row1.append(makeBtn("┣", "По левому краю", () => this.setAlign("left"), style?.align === "left"));
-		row1.append(makeBtn("≡", "По центру", () => this.setAlign("center"), !style?.align || style?.align === "center"));
-		row1.append(makeBtn("┫", "По правому краю", () => this.setAlign("right"), style?.align === "right"));
+	const effectiveAlign = style?.align ?? defaultAlign;
+		row1.append(makeBtn("┣", "По левому краю", () => this.setAlign("left"), effectiveAlign === "left"));
+		row1.append(makeBtn("≡", "По центру", () => this.setAlign("center"), effectiveAlign === "center"));
+		row1.append(makeBtn("┫", "По правому краю", () => this.setAlign("right"), effectiveAlign === "right"));
 		popup.append(row1);
 
 		const row2 = document.createElement("div");
