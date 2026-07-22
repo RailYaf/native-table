@@ -762,10 +762,9 @@ export class Renderer {
 			const isOverscanRow = !this.allowAddRows && row >= this.initialRowCount;
 			const isDisabledRow = this.disabledRows.has(this.dataRow(row)) || isOverscanRow;
 			const isReadOnlyCol = !!colDef?.readOnly && !isPhantom;
-			el.classList.toggle("nt-cell--readonly", isPhantom);
+			el.classList.toggle("nt-cell--phantom", isPhantom || isOverscanRow);
 			el.classList.toggle("nt-cell--disabled", isDisabledRow);
-			el.classList.toggle("nt-cell--phantom-row", isOverscanRow);
-			el.classList.toggle("nt-cell--readonly-col", isReadOnlyCol);
+			el.classList.toggle("nt-cell--readonly", isReadOnlyCol);
 			el.style.cursor = (isPhantom || isOverscanRow) ? "default" : "";
 			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef);
 			// Индикатор ошибки валидации

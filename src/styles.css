@@ -347,32 +347,24 @@
 }
 
 /* Фантом: заливка, без курсора-ячейки */
-.nt-cell--readonly,
-.nt-row--disabled .nt-cell--readonly {
+.nt-cell--phantom,
+.nt-row--disabled .nt-cell--phantom {
 	background: #f5f5f5;
 	cursor: default;
 }
-.nt-cell--readonly:hover,
-.nt-row--disabled .nt-cell--readonly:hover {
+.nt-cell--phantom:hover,
+.nt-row--disabled .nt-cell--phantom:hover {
 	background: #f5f5f5;
 }
 
 /* Disabled row: та же заливка + светлый текст */
-.nt-cell--disabled,
-.nt-cell--phantom-row {
+.nt-cell--disabled {
 	background: #f5f5f5;
 	color: #bbb;
 }
 
-.nt-cell--phantom-row {
-	cursor: default;
-}
-.nt-cell--phantom-row:hover {
-	background: #f5f5f5;
-}
-
 /* ReadOnly колонка: только светлый текст */
-.nt-cell--readonly-col {
+.nt-cell--readonly {
 	color: #bbb;
 }
 

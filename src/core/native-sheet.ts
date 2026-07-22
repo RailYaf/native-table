@@ -259,6 +259,9 @@ export class NativeSheet {
 
 	private onContextMenu(e: MouseEvent): void {
 		e.preventDefault();
+		// Не показывать меню на фантомных строках/столбцах
+		const cell = (e.target as HTMLElement).closest(".nt-cell");
+		if (cell?.classList.contains("nt-cell--phantom")) return;
 		this.hideContextMenu();
 
 		const start = this.selection.start ?? { row: 0, col: 0 };
@@ -766,8 +769,7 @@ export class NativeSheet {
 
 		// Фантомные колонки/строки не выделяются
 		const cellEl = target.closest(".nt-cell") as HTMLElement;
-		if (cellEl?.classList.contains("nt-cell--readonly")) return;
-		if (cellEl?.classList.contains("nt-cell--phantom-row")) return;
+		if (cellEl?.classList.contains("nt-cell--phantom")) return;
 
 		if (this.editor.isActive()) this.editor.commit();
 
