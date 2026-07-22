@@ -398,8 +398,11 @@ export class Renderer {
 
 		// Расширить строки вниз, если скролл вплотную к концу
 		const lastRowTop = this.rowTop(this.totalRows);
-		if (viewBottom + clientHeight > lastRowTop) {
-			this.ensureRows(this.totalRows + EXPAND_ROWS_BY - 1);
+		// Расширить строки вниз, если скролл вплотную к концу (только если allowAddRows)
+		if (this.allowAddRows) {
+			if (viewBottom + clientHeight > lastRowTop) {
+				this.ensureRows(this.totalRows + EXPAND_ROWS_BY - 1);
+			}
 		}
 
 		// Расширить колонки вправо (только без явных колонок)
