@@ -1157,6 +1157,8 @@ export class NativeSheet {
 			for (let r = top; r <= bottom; r++) {
 				if (r >= srcTop && r <= srcBottom && c >= srcLeft && c <= srcRight) continue;
 				const dr = this.toDataRow(r);
+				if (this.disabledRows.has(dr)) continue;
+				if (this.renderer.getColumn(c)?.readOnly) continue;
 				const key = cellKey(dr, c);
 				const old = this.model.get(dr, c);
 				const empty = old.value === null || old.value === undefined;
