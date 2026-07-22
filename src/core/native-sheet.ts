@@ -275,13 +275,19 @@ export class NativeSheet {
 		const items: Array<{ type?: "sep"; label?: string; action?: () => void }> = [
 			{ label: "Копировать\tCtrl+C", action: () => this.copy() },
 			{ label: "Вставить\tCtrl+V", action: () => this.paste() },
-			{ type: "sep" },
-			{ label: "Вставить строку выше", action: () => this.insertRowAbove(row) },
-			{ label: "Вставить строку ниже", action: () => this.insertRowBelow(row) },
-			{ label: `Удалить строки (${toRow - fromRow + 1})`, action: () => this.deleteSelectedRows() },
+		];
+		if (this.renderer.allowAddRows) {
+			items.push(
+				{ type: "sep" },
+				{ label: "Вставить строку выше", action: () => this.insertRowAbove(row) },
+				{ label: "Вставить строку ниже", action: () => this.insertRowBelow(row) },
+				{ label: `Удалить строки (${toRow - fromRow + 1})`, action: () => this.deleteSelectedRows() },
+			);
+		}
+		items.push(
 			{ type: "sep" },
 			{ label: "Очистить\tDel", action: () => this.deleteSelection() },
-		];
+		);
 
 		this.contextMenu.innerHTML = "";
 		for (const item of items) {
