@@ -17,6 +17,7 @@
 import { UndoManager } from "../services/undo-manager";
 import { saveState } from "../services/storage";
 import { cellKey } from "../utils/cell-addr";
+import { DEFAULT_ROW_HEIGHT } from "../utils/consts";
 import { formatCellDisplay, isBoolean, isReadOnly } from "../utils/column-utils";
 import { Editor } from "../ui/editor";
 import { handleKeyboard } from "../ui/keyboard";
@@ -1380,9 +1381,16 @@ export class NativeSheet {
 		const widths: Record<string, number> = {};
 		const limit = this.renderer.hasExplicitColumns ? this.renderer.dataColCount : this.renderer.totalCols;
 		for (let c = 0; c < limit; c++) widths[String(c)] = this.renderer.getColWidth(c);
-		const heights = this.renderer.getRowHeights();
+		// Сохраняем высоты только до последней НЕ-дефолтной строки
+		const heights: number[] = [];
+		let lastNonDefault = -1;
+		for (let r = 0; r < this.renderer.totalRows; r++) {
+			const h = this.renderer.getRowHeight(r);
+			heights.push(h);
+			if (h !== DEFAULT_ROW_HEIGHT) lastNonDefault = r;
+		}
 		const styles = this.collectStyles();
-		saveState(this.options.tableName, { widths, heights, styles });
+		saveState(this.options.tableName, { widths, heights: heights.slice(0, lastNonDefault + 1), styles });
 	}
 
 	private collectStyles(): Record<string, import("../utils/types").CellStyle> {
