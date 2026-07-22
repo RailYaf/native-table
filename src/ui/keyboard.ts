@@ -11,6 +11,9 @@ export interface KeyboardHandlerArgs {
 	selection: SelectionRect;
 	totalRows: number;
 	totalCols: number;
+	/** Ограничение на фантомные строки/колонки */
+	maxRow?: number;
+	maxCol?: number;
 	isEditing: boolean;
 	setSelection: (_rect: SelectionRect) => void;
 	startEdit: (_row: number, _col: number, _initial?: string) => void;
@@ -60,10 +63,12 @@ export function handleKeyboard(e: KeyboardEvent, args: KeyboardHandlerArgs): voi
 	e.preventDefault();
 
 	// Клиппинг координат
+	const maxR = args.maxRow ?? totalRows - 1;
+	const maxC = args.maxCol ?? totalCols - 1;
 	if (next.row < 0) next.row = 0;
 	if (next.col < 0) next.col = 0;
-	if (next.row >= totalRows) next.row = totalRows - 1;
-	if (next.col >= totalCols) next.col = totalCols - 1;
+	if (next.row > maxR) next.row = maxR;
+	if (next.col > maxC) next.col = maxC;
 
 	// Shift — расширение выделения, без Shift — перемещение курсора
 	if (e.shiftKey && selection.start) args.setSelection({ start: selection.start, end: next });

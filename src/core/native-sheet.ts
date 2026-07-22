@@ -1201,6 +1201,8 @@ export class NativeSheet {
 			selection: this.selection,
 			totalRows: this.renderer.totalRows,
 			totalCols: this.renderer.totalCols,
+			maxRow: !this.renderer.allowAddRows && this.renderer.initialRowCount > 0 ? this.renderer.initialRowCount - 1 : undefined,
+			maxCol: this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0 ? this.renderer.dataColCount - 1 : undefined,
 			isEditing: false,
 			setSelection: (rect) => this.setSelection(rect),
 			startEdit: (row, col, initial) => {
