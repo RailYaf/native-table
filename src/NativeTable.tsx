@@ -140,7 +140,9 @@ export function NativeTable({
 	// ── Рендер ────────────────────────────────────────────────────────────────
 
 	return (
-		<div className={`nt-table-wrapper ${className ?? ""}`} style={{ position: "relative" }}>
+		<div className={`nt-table-wrapper ${className ?? ""}`} style={{ position: "relative" }}
+			onMouseDownCapture={() => ref.current?.focus()}
+		>
 			{loading && (
 				<div style={{
 					position: "absolute", inset: 0, zIndex: 99,

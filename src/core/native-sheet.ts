@@ -173,6 +173,7 @@ export class NativeSheet {
 			start: { row: 0, col: 0 },
 			end: { row: 0, col: 0 },
 		});
+		this.container.focus();
 	}
 
 	getData(): Record<string, Cell> {
