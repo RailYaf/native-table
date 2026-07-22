@@ -418,7 +418,7 @@ export class Renderer {
 	updateContainerSizes(): void {
 		const h = this.totalHeight();
 		const w = this.totalWidth();
-		this.inner.style.height = `${this.headerH + h}px`;
+		this.inner.style.height = `${this.allowAddRows ? this.headerH + h : h}px`;
 		this.inner.style.width = `${HEADER_WIDTH + w}px`;
 		this.cellsLayer.style.height = `${h}px`;
 		this.cellsLayer.style.width = `${w}px`;
@@ -528,8 +528,7 @@ export class Renderer {
 	 * Заголовки перекладываются всегда (скролл-оффсет меняется).
 	 */
 	render(force = false): void {
-		// Заполнить viewport фантомными колонками при первом рендере с явными колонками
-		// Всегда проверять фантомные колонки: удалить старые, добавить новые если нужно
+		// Заполнить viewport фантомными колонками (только если allowAddRows)
 		if (this.hasExplicitColumns) {
 			const bodyW = this.bodyDiv.clientWidth;
 			if (bodyW > 0) {
@@ -554,13 +553,19 @@ export class Renderer {
 				this.rowHeights = this.rowHeights.slice(0, this.initialRowCount);
 				this.rowMap = this.rowMap.slice(0, this.initialRowCount);
 				this.totalRows = this.initialRowCount;
-				const targetH = bodyH - this.headerH; // inner добавляет headerH
+				const targetH = Math.max(bodyH - 2, 0);
 				const totalH = this.totalHeight();
 				if (totalH < targetH) {
-					const count = Math.ceil((targetH - totalH) / DEFAULT_ROW_HEIGHT);
-					for (let i = 0; i < count; i++) {
+					const gap = targetH - totalH;
+					const fullRows = Math.floor(gap / DEFAULT_ROW_HEIGHT);
+					const remainder = gap - fullRows * DEFAULT_ROW_HEIGHT;
+					for (let i = 0; i < fullRows; i++) {
 						this.rowHeights.push(DEFAULT_ROW_HEIGHT);
 						this.rowMap.push(this.totalRows + i);
+					}
+					if (remainder > 0) {
+						this.rowHeights.push(remainder);
+						this.rowMap.push(this.totalRows + fullRows);
 					}
 					this.totalRows = this.rowHeights.length;
 					this.baseRowCount = this.totalRows;
