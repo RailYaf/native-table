@@ -787,7 +787,7 @@ export class Renderer {
 			el.classList.toggle("nt-cell--phantom", isPhantom || isOverscanRow);
 			el.classList.toggle("nt-cell--disabled", isDisabledRow);
 			el.classList.toggle("nt-cell--readonly", isReadOnlyCol);
-			el.style.cursor = (isPhantom || isOverscanRow) ? "default" : "";
+			el.style.cursor = (isPhantom || isOverscanRow || this.readonlyTable) ? "default" : "";
 			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef);
 			// Индикатор ошибки валидации
 			this.updateCellError(el, c, this.dataRow(row));
