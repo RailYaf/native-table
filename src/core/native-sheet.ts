@@ -259,9 +259,11 @@ export class NativeSheet {
 
 	private onContextMenu(e: MouseEvent): void {
 		e.preventDefault();
-		// Не показывать меню на фантомных строках/столбцах
+		// Не показывать меню на фантомных строках/столбцах/заголовках
 		const cell = (e.target as HTMLElement).closest(".nt-cell");
 		if (cell?.classList.contains("nt-cell--phantom")) return;
+		const header = (e.target as HTMLElement).closest(".nt-header-cell");
+		if (header?.classList.contains("nt-header-cell--phantom") || header?.classList.contains("nt-header-cell--disabled")) return;
 		this.hideContextMenu();
 
 		const start = this.selection.start ?? { row: 0, col: 0 };
@@ -622,6 +624,12 @@ export class NativeSheet {
 
 		// Правый клик — проверить, попадает ли ячейка в текущее выделение
 		if (e.button === 2) {
+			// Не менять выделение на фантомных ячейках/заголовках
+			const cell = (target as HTMLElement).closest(".nt-cell");
+			if (cell?.classList.contains("nt-cell--phantom")) return;
+			const header = (target as HTMLElement).closest(".nt-header-cell");
+			if (header?.classList.contains("nt-header-cell--phantom") || header?.classList.contains("nt-header-cell--disabled")) return;
+
 			const found = this.cellAtEvent(e);
 			if (found) {
 				const sr = this.selection.start;
