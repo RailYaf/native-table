@@ -31,6 +31,8 @@ export interface NativeTableProps extends Omit<NativeSheetOptions, "onChange"> {
 	allowAddRows?: boolean;
 	/** Таблица только для чтения (все ячейки — readonly, только Copy в меню) */
 	readonly?: boolean;
+	/** Текст подсказки (иконка info в тулбаре) */
+	info?: string;
 }
 
 /** Основной компонент: тулбар + таблица. */
@@ -55,6 +57,7 @@ export function NativeTable({
 	validationErrors,
 	allowAddRows = true,
 	readonly: readOnlyTable,
+	info,
 }: NativeTableProps) {
 	/** Ссылка на контейнер таблицы (.nt-container). */
 	const ref = useRef<HTMLDivElement | null>(null);
@@ -174,6 +177,12 @@ export function NativeTable({
 						onChange={(e) => { setLastFg(e.target.value); sheetRef.current?.setCellStyle({ color: e.target.value }); }}
 					/>
 				</label>
+				{info && (
+					<>
+						<span className="nt-tb-sep" />
+						<span className="nt-tb-btn nt-tb-info" data-tooltip={info}>ⓘ</span>
+					</>
+				)}
 			</div>
 			{/* Контейнер для NativeSheet — .nt-root создаётся внутри конструктора */}
 			<div ref={ref} className="nt-container" style={style} />
