@@ -537,7 +537,7 @@ export class Renderer {
 				this.totalCols = this.dataColCount;
 				const totalW = this.totalWidth();
 				if (totalW < bodyW) {
-					const colW = this.colWidths[0] ?? DEFAULT_COL_WIDTH;
+					const colW = DEFAULT_COL_WIDTH;
 					const count = Math.ceil((bodyW - totalW) / colW);
 					for (let i = 0; i < count; i++) this.colWidths.push(colW);
 					this.totalCols = this.colWidths.length;
