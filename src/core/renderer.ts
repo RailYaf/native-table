@@ -530,19 +530,22 @@ export class Renderer {
 	 */
 	render(force = false): void {
 		// Заполнить viewport фантомными колонками при первом рендере с явными колонками
-		// Всегда проверять, нужно ли добавить фантомные колонки (при ресайзе окна/колонок)
+		// Всегда проверять фантомные колонки: удалить старые, добавить новые если нужно
 		if (this.hasExplicitColumns) {
 			const bodyW = this.bodyDiv.clientWidth;
 			if (bodyW > 0) {
+				// Удалить старые фантомы
+				this.colWidths = this.colWidths.slice(0, this.dataColCount);
+				this.totalCols = this.dataColCount;
 				const totalW = this.totalWidth();
 				if (totalW < bodyW) {
 					const colW = this.colWidths[0] ?? DEFAULT_COL_WIDTH;
 					const count = Math.ceil((bodyW - totalW) / colW);
 					for (let i = 0; i < count; i++) this.colWidths.push(colW);
 					this.totalCols = this.colWidths.length;
-					this.rebuildColLeftCache();
-					this.updateContainerSizes();
 				}
+				this.rebuildColLeftCache();
+				this.updateContainerSizes();
 			}
 		}
 		const { sr, er, sc, ec } = this.computeWindow();
