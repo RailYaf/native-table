@@ -399,7 +399,7 @@
 	border-left: 8px solid transparent;
 	border-top: 8px solid #d32f2f;
 	pointer-events: auto;
-	cursor: help;
+	cursor: pointer;
 	z-index: 3;
 }
 

@@ -887,6 +887,7 @@ export class NativeSheet {
 	 * данные → через onChange колбэк, очистить историю undo.
 	 */
 	save(): void {
+		if (this.renderer.validationErrors && Object.keys(this.renderer.validationErrors).length > 0) return;
 		this.saveColumnWidths();
 		this.options.onChange?.(this.model.getAll(), {});
 		this._undoMgr.clear();

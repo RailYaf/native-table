@@ -124,19 +124,21 @@ export function NativeTable({
 		}
 	}, [validationErrors, tableName]);
 
+	const hasErrors = validationErrors && Object.keys(validationErrors).length > 0;
+
 	// ── Обработчик тулбара: делегирование по data-action ───────────────────────
 	const onToolbar = useCallback((e: React.MouseEvent) => {
 		const btn = (e.target as HTMLElement).closest("[data-action]") as HTMLElement | null;
 		if (!btn) return;
 			if (btn.dataset.action === "undo") sheetRef.current?.undo();
 		else if (btn.dataset.action === "redo") sheetRef.current?.redo();
-		else if (btn.dataset.action === "save") { sheetRef.current?.save(); onSaveRef.current?.(sheetRef.current?.getData() ?? {}); }
+		else if (btn.dataset.action === "save") { if (hasErrors) return; sheetRef.current?.save(); onSaveRef.current?.(sheetRef.current?.getData() ?? {}); }
 		else if (btn.dataset.action === "wrap") sheetRef.current?.toggleWrap();
 		else if (btn.dataset.action === "bold") sheetRef.current?.toggleBold();
 		else if (btn.dataset.action === "italic") sheetRef.current?.toggleItalic();
 		else if (btn.dataset.action === "underline") sheetRef.current?.toggleUnderline();
 		else if (btn.dataset.action === "align") { sheetRef.current?.showAlignPopup((e as unknown as MouseEvent).clientX, (e as unknown as MouseEvent).clientY); }
-	}, []);
+	}, [hasErrors]);
 
 	// ── Рендер ────────────────────────────────────────────────────────────────
 
@@ -154,7 +156,7 @@ export function NativeTable({
 				</div>
 			)}
 			<div className="nt-toolbar" onClick={onToolbar}>
-				<button className="nt-tb-btn nt-tb-save" data-action="save" data-tooltip="Сохранить (Ctrl+S)"><SaveIcon /><span className="nt-tb-dot" /></button>
+				<button className="nt-tb-btn nt-tb-save" data-action="save" disabled={hasErrors} data-tooltip="Сохранить (Ctrl+S)"><SaveIcon /><span className="nt-tb-dot" /></button>
 				<span className="nt-tb-sep" />
 				<button className="nt-tb-btn" data-action="undo" disabled data-tooltip="Отменить (Ctrl+Z)"><UndoIcon /></button>
 				<button className="nt-tb-btn" data-action="redo" disabled data-tooltip="Вернуть (Ctrl+Y)"><RedoIcon /></button>
