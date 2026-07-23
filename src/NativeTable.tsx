@@ -124,6 +124,22 @@ export function NativeTable({
 		}
 	}, [validationErrors, tableName]);
 
+	useEffect(() => {
+		if (sheetRef.current) sheetRef.current.renderer.readonlyTable = readOnlyTable ?? false;
+	}, [readOnlyTable]);
+
+	useEffect(() => {
+		if (sheetRef.current) sheetRef.current.renderer.allowAddRows = allowAddRows;
+		sheetRef.current?.renderer?.render(true);
+	}, [allowAddRows]);
+
+	useEffect(() => {
+		if (sheetRef.current) {
+			sheetRef.current.renderer.disabledRows = new Set(disabledRows);
+			sheetRef.current.disabledRows = new Set(disabledRows);
+		}
+	}, [disabledRows]);
+
 	const hasErrors = validationErrors && Object.keys(validationErrors).length > 0;
 
 	// ── Обработчик тулбара: делегирование по data-action ───────────────────────

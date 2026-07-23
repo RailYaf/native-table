@@ -79,7 +79,7 @@ export class NativeSheet {
 	private _viewRedo: string[] = [];
 
 	/** Строки, запрещённые к редактированию */
-	private disabledRows: Set<number>;
+	disabledRows: Set<number>;
 
 	constructor(
 		/** Контейнер .nt-root, созданный в NativeTable.tsx */
