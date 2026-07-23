@@ -1068,6 +1068,9 @@ export class NativeSheet {
 	}
 
 	private _updateToolbar(): void {
+		if (!this._undoMgr.canUndo && this._viewUndo.length === 0) {
+			this._dataDirty = false;
+		}
 		const u = document.querySelector(".nt-tb-btn[data-action=undo]") as HTMLButtonElement;
 		const r = document.querySelector(".nt-tb-btn[data-action=redo]") as HTMLButtonElement;
 		const dot = document.querySelector(".nt-tb-dot") as HTMLElement;
