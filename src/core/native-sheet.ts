@@ -402,9 +402,10 @@ export class NativeSheet {
 				this.hideFilterChildPopup();
 				const popup = document.createElement("div");
 				popup.className = "nt-sf-child-popup";
+				const selectedOp = (filterMenuItem as HTMLElement).dataset.op ?? "values";
 				for (const op of filterOps) {
 					const item = document.createElement("div");
-					item.className = `nt-select-dropdown-item${op.value === curFilterType ? " nt-select-dropdown-item--selected" : ""}`;
+					item.className = `nt-select-dropdown-item${op.value === selectedOp ? " nt-select-dropdown-item--selected" : ""}`;
 					item.textContent = op.label;
 					item.addEventListener("mousedown", (ev) => { ev.preventDefault(); ev.stopPropagation(); });
 					item.addEventListener("click", (ev) => {
