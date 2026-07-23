@@ -59,6 +59,7 @@
 .nt-tb-save { position: relative; }
 
 .nt-tb-dot {
+	display: none;
 	position: absolute;
 	top: 2px; right: 2px;
 	width: 6px; height: 6px;

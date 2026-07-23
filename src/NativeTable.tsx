@@ -154,7 +154,7 @@ export function NativeTable({
 				</div>
 			)}
 			<div className="nt-toolbar" onClick={onToolbar}>
-				<button className="nt-tb-btn nt-tb-save" data-action="save" data-tooltip="Сохранить (Ctrl+S)"><SaveIcon /><span className="nt-tb-dot" style={{display: "none"}} /></button>
+				<button className="nt-tb-btn nt-tb-save" data-action="save" data-tooltip="Сохранить (Ctrl+S)"><SaveIcon /><span className="nt-tb-dot" /></button>
 				<span className="nt-tb-sep" />
 				<button className="nt-tb-btn" data-action="undo" disabled data-tooltip="Отменить (Ctrl+Z)"><UndoIcon /></button>
 				<button className="nt-tb-btn" data-action="redo" disabled data-tooltip="Вернуть (Ctrl+Y)"><RedoIcon /></button>
