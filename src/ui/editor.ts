@@ -154,7 +154,20 @@ export class Editor {
 		else if (type === "number") { input.type = "text"; input.inputMode = "decimal"; }
 		else input.type = "text";
 		input.value = currentValue;
-		input.addEventListener("blur", () => { if (this.active) this.commit("none"); });
+		if (type === "date") {
+			let dateIconClicked = false;
+			input.addEventListener("pointerdown", () => {
+				dateIconClicked = true;
+				setTimeout(() => { dateIconClicked = false; }, 300);
+			});
+			input.addEventListener("blur", () => {
+				if (!this.active) return;
+				if (dateIconClicked) return;
+				this.commit("none");
+			});
+		} else {
+			input.addEventListener("blur", () => { if (this.active) this.commit("none"); });
+		}
 		input.addEventListener("keydown", (e) => this.onKeyDown(e));
 		applyBox(input, box);
 
