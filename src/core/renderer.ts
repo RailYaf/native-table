@@ -982,6 +982,10 @@ function applyStyle(
 	el.classList.toggle("nt-cell--boolean", isBoolean);
 
 	if (isBoolean) {
+		if (el.classList.contains("nt-cell--phantom")) {
+			el.textContent = "";
+			return;
+		}
 		const checked = cell.value === true || cell.value === "true" || cell.value === 1;
 		let cb = el.firstElementChild as HTMLInputElement | null;
 		if (!cb || cb.tagName !== "INPUT") {
