@@ -1416,6 +1416,7 @@ export class NativeSheet {
 	): void {
 		this.clearCopy();
 		const dr = this.toDataRow(row);
+		const colDef = this.renderer.getColumn(col);
 		const oldCell = this.model.get(dr, col);
 		const oldStr = oldCell.value === null || oldCell.value === undefined ? "" : String(oldCell.value);
 		// Не записывать undo если значение не изменилось
@@ -1423,7 +1424,7 @@ export class NativeSheet {
 			const key = cellKey(dr, col);
 			const isEmpty = oldCell.value === null || oldCell.value === undefined;
 			this._undoMgr.startBatch(dr, col, isEmpty ? null : { ...oldCell });
-			this.model.set(dr, col, value);
+			this.model.set(dr, col, value, colDef?.type);
 			const newCell = this.model.get(dr, col);
 			this._undoMgr.updateNewValue(this._undoMgr.batchSize - 1, { ...newCell });
 			this._undoMgr.commit();

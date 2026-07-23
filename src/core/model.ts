@@ -60,13 +60,13 @@ export class SheetModel {
 	 * Установить значение после парсинга пользовательского ввода.
 	 * Пустая строка — удалить ячейку. Вызывает onChange.
 	 */
-	set(row: number, col: number, raw: string): void {
+	set(row: number, col: number, raw: string, colType?: string): void {
 		const key = cellKey(row, col);
 		if (raw === "") {
 			this.cells.delete(key);
 		} else {
 			const existing = this.cells.get(key);
-			this.cells.set(key, { ...existing, value: parseLiteral(raw) });
+			this.cells.set(key, { ...existing, value: parseLiteral(raw, colType) });
 		}
 	}
 
@@ -147,14 +147,16 @@ export class SheetModel {
 // "hello"  → "hello"
 // ""       → null
 
-function parseLiteral(input: string): ScalarCellValue {
+function parseLiteral(input: string, colType?: string): ScalarCellValue {
 	const trimmed = input.trim();
 	if (trimmed === "") {
 		return null;
 	}
-	const num = Number(trimmed);
-	if (!Number.isNaN(num) && trimmed !== "") {
-		return num;
+	if (colType === "number") {
+		const num = Number(trimmed);
+		if (!Number.isNaN(num) && trimmed !== "") {
+			return num;
+		}
 	}
 	if (trimmed.toLowerCase() === "true") {
 		return true;
