@@ -62,8 +62,12 @@ export class SheetModel {
 	 */
 	set(row: number, col: number, raw: string): void {
 		const key = cellKey(row, col);
-		if (raw === "") this.cells.delete(key);
-		else this.cells.set(key, { value: parseLiteral(raw) });
+		if (raw === "") {
+			this.cells.delete(key);
+		} else {
+			const existing = this.cells.get(key);
+			this.cells.set(key, { ...existing, value: parseLiteral(raw) });
+		}
 	}
 
 	/** Удалить ячейку без вызова onChange. */
