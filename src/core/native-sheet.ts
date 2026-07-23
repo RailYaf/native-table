@@ -377,8 +377,9 @@ export class NativeSheet {
 			<div class="nt-sf-section">Фильтр</div>
 			<div class="nt-sf-filter-menu-item">Тип фильтра<span class="nt-sf-op-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span></div>
 			<div class="nt-sf-values-block" style="display:${curFilterType === "values" ? "block" : "none"}">
+				<input class="nt-sf-search" placeholder="Поиск..." value="">
 				<label class="nt-sf-radio"><input type="checkbox" class="nt-sf-select-all" ${!currentFilter || (currentFilter.op === "values" && currentFilter.values) ? "checked" : ""}> (Выбрать всё)</label>
-				${uniqueValues.map((v) => `<label class="nt-sf-radio"><input type="checkbox" value="${escapeHtml(v)}" ${!currentFilter || (currentFilter.op === "values" && currentFilter.values?.has(v)) ? "checked" : ""}> ${escapeHtml(formatCellDisplay(v, colDef))}</label>`).join("")}
+				${uniqueValues.map((v) => `<label class="nt-sf-radio nt-sf-value-row"><input type="checkbox" value="${escapeHtml(v)}" ${!currentFilter || (currentFilter.op === "values" && currentFilter.values?.has(v)) ? "checked" : ""}> ${escapeHtml(formatCellDisplay(v, colDef))}</label>`).join("")}
 				<div class="nt-sf-warn" style="display:none">Выберите хотя бы одно значение</div>
 			</div>
 			<div class="nt-sf-custom-block" style="display:${curFilterType !== "values" ? "block" : "none"};padding:4px 16px">
@@ -410,12 +411,15 @@ export class NativeSheet {
 						ev.stopPropagation();
 						const valBlock = this.sortFilterPopup.querySelector(".nt-sf-values-block") as HTMLElement;
 						const customBlock = this.sortFilterPopup.querySelector(".nt-sf-custom-block") as HTMLElement;
+						const searchInput = this.sortFilterPopup.querySelector(".nt-sf-search") as HTMLInputElement;
 						if (op.value === "values") {
 							if (valBlock) valBlock.style.display = "block";
 							if (customBlock) customBlock.style.display = "none";
+							if (searchInput) { searchInput.value = ""; searchInput.dispatchEvent(new Event("input")); }
 						} else {
 							if (valBlock) valBlock.style.display = "none";
 							if (customBlock) customBlock.style.display = "block";
+							if (searchInput) searchInput.value = "";
 							const val2 = this.sortFilterPopup.querySelector(`#sf-val2-${col}`) as HTMLInputElement;
 							if (val2) val2.style.display = op.value === "between" ? "block" : "none";
 						}
@@ -506,7 +510,10 @@ export class NativeSheet {
 		if (selectAll) {
 			selectAll.addEventListener("change", () => {
 				const checkboxes = this.sortFilterPopup.querySelectorAll<HTMLInputElement>("input[type='checkbox']:not(.nt-sf-select-all)");
-				for (const cb of Array.from(checkboxes)) cb.checked = selectAll.checked;
+				for (const cb of Array.from(checkboxes)) {
+					const row = cb.closest(".nt-sf-value-row") as HTMLElement;
+					if (!row || row.style.display !== "none") cb.checked = selectAll.checked;
+				}
 				updateApplyBtn();
 			});
 		}
@@ -514,6 +521,19 @@ export class NativeSheet {
 		const allCheckboxes = this.sortFilterPopup.querySelectorAll<HTMLInputElement>("input[type='checkbox']:not(.nt-sf-select-all)");
 		for (const cb of Array.from(allCheckboxes)) {
 			cb.addEventListener("change", updateApplyBtn);
+		}
+
+		// Поиск по значениям фильтра
+		const searchInput = this.sortFilterPopup.querySelector(".nt-sf-search") as HTMLInputElement;
+		if (searchInput) {
+			searchInput.addEventListener("input", () => {
+				const query = searchInput.value.toLowerCase();
+				const rows = this.sortFilterPopup.querySelectorAll<HTMLElement>(".nt-sf-value-row");
+				for (const row of Array.from(rows)) {
+					const text = (row.textContent ?? "").toLowerCase();
+					row.style.display = query === "" || text.includes(query) ? "" : "none";
+				}
+			});
 		}
 
 		const applyBtn = this.sortFilterPopup.querySelector(".nt-sf-btn--apply");
