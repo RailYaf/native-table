@@ -591,6 +591,8 @@ export class NativeSheet {
 
 	private updateSortIndicators(): void {
 		const btns = this.container.querySelectorAll(".nt-header-sort-btn");
+		const svgUp = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>';
+		const svgDown = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
 		for (const btn of Array.from(btns)) {
 			const c = Number((btn as HTMLElement).dataset.col);
 			const idx = this.view.sortStack.findIndex((s) => s.col === c);
@@ -598,12 +600,17 @@ export class NativeSheet {
 			const hasFilter = this.view.filters.has(c);
 			btn.classList.toggle("nt-header-sort-btn--active", !!entry || hasFilter);
 			if (entry && this.view.sortStack.length > 1) {
-				(btn as HTMLElement).textContent = `${idx + 1}${entry.asc ? "▲" : "▼"}`;
+				(btn as HTMLElement).innerHTML = `<span class="nt-sort-num">${idx + 1}</span>` + (entry.asc ? svgUp : svgDown);
 			} else if (entry) {
-				(btn as HTMLElement).textContent = entry.asc ? "▲" : "▼";
+				(btn as HTMLElement).innerHTML = entry.asc ? svgUp : svgDown;
 			} else {
-				(btn as HTMLElement).textContent = "▾";
+				(btn as HTMLElement).innerHTML = svgDown;
 			}
+		}
+		const filterBtns = this.container.querySelectorAll(".nt-header-filter-btn");
+		for (const btn of Array.from(filterBtns)) {
+			const c = Number((btn as HTMLElement).dataset.col);
+			btn.classList.toggle("nt-header-filter-btn--active", this.view.filters.has(c));
 		}
 	}
 
@@ -700,9 +707,10 @@ export class NativeSheet {
 			return;
 		}
 
-		// Кнопка сортировки/фильтра в заголовке
-		if (target.classList.contains("nt-header-sort-btn")) {
-			const col = Number(target.dataset.col);
+		// Кнопка фильтра в заголовке
+		const filterBtn = target.closest(".nt-header-filter-btn") as HTMLElement | null;
+		if (filterBtn) {
+			const col = Number(filterBtn.dataset.col);
 			if (!Number.isNaN(col)) {
 				this.showSortFilterPopup(col, e.clientX, e.clientY);
 			}
@@ -1518,6 +1526,7 @@ export class NativeSheet {
 		this.clearCopy();
 		this.container.focus();
 	}
+
 }
 
 function escapeHtml(s: string): string {

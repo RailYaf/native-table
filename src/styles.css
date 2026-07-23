@@ -219,21 +219,40 @@
 
 /* Кнопка сортировки/фильтра в заголовке */
 .nt-header-sort-btn {
+	display: none;
 	margin-left: 4px;
-	font-size: 20px;
+	align-items: center;
+	justify-content: center;
 	color: #bbb;
-	cursor: pointer;
 	flex-shrink: 0;
-	line-height: 1;
-}
-
-.nt-header-sort-btn:hover {
-	color: #2e7d32;
 }
 
 .nt-header-sort-btn--active {
+	display: inline-flex;
 	color: #2e7d32;
-	font-weight: bold;
+}
+
+/* Номер сортировки */
+.nt-sort-num {
+	font-size: 9px;
+	font-weight: 700;
+	margin-right: 1px;
+}
+
+.nt-header-filter-btn {
+	margin-left: 4px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #bbb;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+.nt-header-filter-btn:hover {
+	color: #2e7d32;
+}
+.nt-header-filter-btn--active {
+	color: #2e7d32;
 }
 
 /* Resize handle */
