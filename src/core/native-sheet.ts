@@ -1062,7 +1062,7 @@ export class NativeSheet {
 			this.overlay.update(this.selection);
 			this.renderer.highlightHeaders(this.selection);
 		}
-		if (Object.keys(changedCells).length > 0) this._dataDirty = true;
+		if (Object.keys(changedCells).length > 0 || hasLayout) this._dataDirty = true;
 		this._updateToolbar();
 		this.model.emit(dir as ChangeAction, changedCells);
 	}
@@ -1467,6 +1467,7 @@ export class NativeSheet {
 			if (newW !== oldW) {
 				this._undoMgr.addRecord({ row: 0, col, oldValue: null, newValue: null, colWidth: { old: oldW, new: newW } });
 				this._undoMgr.commit();
+				this._dataDirty = true;
 				this._updateToolbar();
 			}
 			this.resizingCol = -1;
@@ -1488,6 +1489,7 @@ export class NativeSheet {
 			if (newH !== oldH) {
 				this._undoMgr.addRecord({ row, col: 0, oldValue: null, newValue: null, rowHeight: { old: oldH, new: newH } });
 				this._undoMgr.commit();
+				this._dataDirty = true;
 				this._updateToolbar();
 			}
 			this.overlay.update(this.selection);
