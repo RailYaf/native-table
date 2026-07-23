@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { NativeSheet } from "./core/native-sheet";
 import { loadState } from "./services/storage";
 import type { Cell, NativeSheetOptions } from "./utils/types";
+import { SaveIcon, UndoIcon, RedoIcon, BoldIcon, ItalicIcon, UnderlineIcon, AlignIcon, WrapIcon, PaletteIcon, TextColorIcon, InfoIcon } from "./ui/icons";
 
 /** Пропсы компонента — расширяют NativeSheetOptions, добавляя className и style. */
 export interface NativeTableProps extends Omit<NativeSheetOptions, "onChange"> {
@@ -153,28 +154,28 @@ export function NativeTable({
 				</div>
 			)}
 			<div className="nt-toolbar" onClick={onToolbar}>
-				<button className="nt-tb-btn nt-tb-save" data-action="save" data-tooltip="Сохранить (Ctrl+S)">💾<span className="nt-tb-dot" style={{display: "none"}} /></button>
+				<button className="nt-tb-btn nt-tb-save" data-action="save" data-tooltip="Сохранить (Ctrl+S)"><SaveIcon /><span className="nt-tb-dot" style={{display: "none"}} /></button>
 				<span className="nt-tb-sep" />
-				<button className="nt-tb-btn" data-action="undo" disabled data-tooltip="Отменить (Ctrl+Z)">↩</button>
-				<button className="nt-tb-btn" data-action="redo" disabled data-tooltip="Вернуть (Ctrl+Y)">↪</button>
+				<button className="nt-tb-btn" data-action="undo" disabled data-tooltip="Отменить (Ctrl+Z)"><UndoIcon /></button>
+				<button className="nt-tb-btn" data-action="redo" disabled data-tooltip="Вернуть (Ctrl+Y)"><RedoIcon /></button>
 				<span className="nt-tb-sep" />
-				<button className="nt-tb-btn" data-action="bold" data-tooltip="Жирный">B</button>
-				<button className="nt-tb-btn" data-action="italic" data-tooltip="Курсив"><i>I</i></button>
-				<button className="nt-tb-btn" data-action="underline" data-tooltip="Подчёркнутый">U</button>
+				<button className="nt-tb-btn" data-action="bold" data-tooltip="Жирный"><BoldIcon /></button>
+				<button className="nt-tb-btn" data-action="italic" data-tooltip="Курсив"><ItalicIcon /></button>
+				<button className="nt-tb-btn" data-action="underline" data-tooltip="Подчёркнутый"><UnderlineIcon /></button>
 				<span className="nt-tb-sep" />
-				<button className="nt-tb-btn" data-action="align" data-tooltip="Выравнивание">≡</button>
+				<button className="nt-tb-btn" data-action="align" data-tooltip="Выравнивание"><AlignIcon /></button>
 				<span className="nt-tb-sep" />
-				<button className="nt-tb-btn" data-action="wrap" data-tooltip="Перенос текста">↲</button>
+				<button className="nt-tb-btn" data-action="wrap" data-tooltip="Перенос текста"><WrapIcon /></button>
 				<span className="nt-tb-sep" />
 				<label className="nt-tb-btn nt-tb-color-btn" data-tooltip="Цвет заливки">
-					🎨
+					<PaletteIcon />
 					<span className="nt-tb-color-bar" style={{backgroundColor: lastBg}} />
 					<input type="color" className="nt-tb-color" value={lastBg}
 						onChange={(e) => { setLastBg(e.target.value); sheetRef.current?.setCellStyle({ background: e.target.value }); }}
 					/>
 				</label>
 				<label className="nt-tb-btn nt-tb-color-btn" data-tooltip="Цвет текста">
-					<strong>A</strong>
+					<TextColorIcon />
 					<span className="nt-tb-color-bar" style={{backgroundColor: lastFg}} />
 					<input type="color" className="nt-tb-color" value={lastFg}
 						onChange={(e) => { setLastFg(e.target.value); sheetRef.current?.setCellStyle({ color: e.target.value }); }}
@@ -183,7 +184,7 @@ export function NativeTable({
 				{info && (
 					<>
 						<span className="nt-tb-sep" />
-						<span className="nt-tb-btn nt-tb-info" data-tooltip={info}>ⓘ</span>
+						<span className="nt-tb-btn nt-tb-info" data-tooltip={info}><InfoIcon /></span>
 					</>
 				)}
 			</div>
