@@ -75,6 +75,12 @@ export class NativeSheet {
 	/** Менеджер undo/redo */
 	private _undoMgr = new UndoManager();
 
+	/** Флаг изменений данных (без сортировки/фильтрации) — для save-dot */
+	private _dataDirty = false;
+
+	private _viewUndo: string[] = [];
+	private _viewRedo: string[] = [];
+
 	/** Строки, запрещённые к редактированию */
 	private disabledRows: Set<number>;
 
@@ -190,6 +196,8 @@ export class NativeSheet {
 		this.editor.setView(this.view);
 		this.renderer.rowMap = this.view.rowMap;
 		this.renderer.updateLayout();
+		this._dataDirty = false;
+		this._updateToolbar();
 	}
 
 	private syncView(): void {
@@ -512,6 +520,8 @@ export class NativeSheet {
 		if (applyBtn) {
 			applyBtn.addEventListener("mousedown", (ev) => ev.preventDefault());
 			applyBtn.addEventListener("click", () => {
+				this._viewUndo.push(this._snapView());
+				this._viewRedo = [];
 				const dir = (this.sortFilterPopup.querySelector(`input[name="sf-sort-${col}"]:checked`) as HTMLInputElement)?.value as "asc" | "desc" | "none";
 				this.view.setSort(col, dir);
 
@@ -533,6 +543,7 @@ export class NativeSheet {
 
 				this.syncView();
 				this.updateSortIndicators();
+				this._updateToolbar();
 				this.hideSortFilterPopup();
 			});
 		}
@@ -542,9 +553,12 @@ export class NativeSheet {
 		if (clearBtn) {
 			clearBtn.addEventListener("mousedown", (ev) => ev.preventDefault());
 			clearBtn.addEventListener("click", () => {
+				this._viewUndo.push(this._snapView());
+				this._viewRedo = [];
 				this.view.clearColumn(col);
 				this.syncView();
 				this.updateSortIndicators();
+				this._updateToolbar();
 				this.hideSortFilterPopup();
 			});
 		}
@@ -844,6 +858,7 @@ export class NativeSheet {
 		const newCell = this.model.get(dr, col);
 		this._undoMgr.updateNewValue(0, { ...newCell });
 		this._undoMgr.commit();
+		this._dataDirty = true;
 		this._updateToolbar();
 		this.model.emit("edit", { [key]: { old: { ...cell }, new: { ...newCell } } });
 		this.renderer.refreshValues();
@@ -864,6 +879,7 @@ export class NativeSheet {
 		this.saveColumnWidths();
 		this.options.onChange?.(this.model.getAll(), {});
 		this._undoMgr.clear();
+		this._dataDirty = false;
 		this._updateToolbar();
 	}
 
@@ -916,6 +932,7 @@ export class NativeSheet {
 			}
 		}
 		this._undoMgr.commit();
+		this._dataDirty = true;
 		this._updateToolbar();
 		this.updateToolbarStyleState();
 		this.model.emit("edit", changedCells);
@@ -985,7 +1002,45 @@ export class NativeSheet {
 		this.applyStyle(style);
 	}
 
+	private _snapView(): string {
+		return JSON.stringify({
+			sort: this.view.sortStack.map((s) => ({ col: s.col, asc: s.asc })),
+			filters: Array.from(this.view.filters.entries()).map(([col, f]) => ({
+				col, op: f.op, value: f.value, value2: f.value2,
+				values: f.values ? Array.from(f.values) : undefined,
+			})),
+		});
+	}
+
+	private _restoreView(snap: string): void {
+		const state = JSON.parse(snap) as { sort: Array<{ col: number; asc: boolean }>; filters: Array<{ col: number; op: string; value?: string; value2?: string; values?: string[] }> };
+		this.view.sortStack = state.sort.map((s) => ({ col: s.col, asc: s.asc }));
+		this.view.filters.clear();
+		for (const f of state.filters) {
+			const filter: import("./sheet-view").ColumnFilter = { op: f.op as import("./sheet-view").FilterOp, value: f.value, value2: f.value2 };
+			if (f.values) filter.values = new Set(f.values);
+			this.view.filters.set(f.col, filter);
+		}
+		this.view.forceRebuild();
+		this.syncView();
+		this.updateSortIndicators();
+	}
+
 	private _undoRedo(dir: "undo" | "redo"): void {
+		if (dir === "undo" && this._viewUndo.length > 0) {
+			const snap = this._viewUndo.pop()!;
+			this._viewRedo.push(this._snapView());
+			this._restoreView(snap);
+			this._updateToolbar();
+			return;
+		}
+		if (dir === "redo" && this._viewRedo.length > 0) {
+			const snap = this._viewRedo.pop()!;
+			this._viewUndo.push(this._snapView());
+			this._restoreView(snap);
+			this._updateToolbar();
+			return;
+		}
 		const batch = dir === "undo" ? this._undoMgr.undo() : this._undoMgr.redo();
 		if (!batch) return;
 		let hasLayout = false;
@@ -1007,6 +1062,7 @@ export class NativeSheet {
 			this.overlay.update(this.selection);
 			this.renderer.highlightHeaders(this.selection);
 		}
+		if (Object.keys(changedCells).length > 0) this._dataDirty = true;
 		this._updateToolbar();
 		this.model.emit(dir as ChangeAction, changedCells);
 	}
@@ -1015,9 +1071,9 @@ export class NativeSheet {
 		const u = document.querySelector(".nt-tb-btn[data-action=undo]") as HTMLButtonElement;
 		const r = document.querySelector(".nt-tb-btn[data-action=redo]") as HTMLButtonElement;
 		const dot = document.querySelector(".nt-tb-dot") as HTMLElement;
-		if (u) u.disabled = !this._undoMgr.canUndo;
-		if (r) r.disabled = !this._undoMgr.canRedo;
-		if (dot) dot.style.display = this._undoMgr.canUndo ? "block" : "none";
+		if (u) u.disabled = !this._undoMgr.canUndo && this._viewUndo.length === 0;
+		if (r) r.disabled = !this._undoMgr.canRedo && this._viewRedo.length === 0;
+		if (dot) dot.style.display = this._dataDirty ? "block" : "none";
 	}
 
 	updateToolbarStyleState(): void {
@@ -1206,6 +1262,7 @@ export class NativeSheet {
 			}
 		}
 		this._undoMgr.commit();
+		this._dataDirty = true;
 		this._updateToolbar();
 		this.model.emit("fill", changedCells);
 		this.renderer.refreshValues();
@@ -1304,6 +1361,7 @@ export class NativeSheet {
 			}
 		}
 		this._undoMgr.commit();
+		this._dataDirty = true;
 		this._updateToolbar();
 		this.model.emit("paste", changedCells);
 		this.setSelectionNoScroll({
@@ -1337,6 +1395,7 @@ export class NativeSheet {
 			}
 		}
 		this._undoMgr.commit();
+		this._dataDirty = true;
 		this._updateToolbar();
 		this.model.emit("clear", changedCells);
 		this.renderer.refreshValues();
@@ -1362,6 +1421,7 @@ export class NativeSheet {
 			const newCell = this.model.get(dr, col);
 			this._undoMgr.updateNewValue(this._undoMgr.batchSize - 1, { ...newCell });
 			this._undoMgr.commit();
+			this._dataDirty = true;
 			this._updateToolbar();
 			this.model.emit("edit", { [key]: { old: isEmpty ? null : { ...oldCell }, new: { ...newCell } } });
 		}

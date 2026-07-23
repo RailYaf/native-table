@@ -121,6 +121,11 @@ export class SheetView {
 		this.rebuild();
 	}
 
+	/** Принудительно перестроить rowMap (после ручного изменения sortStack/filters). */
+	forceRebuild(): void {
+		this.rebuild();
+	}
+
 	// ── Приватные ─────────────────────────────────────────────────────────────
 
 	/**
