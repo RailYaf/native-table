@@ -510,7 +510,7 @@ export class Renderer {
 	 */
 	scrollToCell(row: number, col: number): void {
 		const top = this.rowTop(row);
-		const left = this.colLeft(col);
+		const left = HEADER_WIDTH + this.colLeft(col);
 		const right = left + this.colWidths[col];
 		const bottom = top + this.getRowHeight(row);
 		const { scrollTop, scrollLeft, clientWidth, clientHeight } = this.bodyDiv;
