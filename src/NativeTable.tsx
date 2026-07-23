@@ -125,7 +125,10 @@ export function NativeTable({
 	}, [validationErrors, tableName]);
 
 	useEffect(() => {
-		if (sheetRef.current) sheetRef.current.renderer.readonlyTable = readOnlyTable ?? false;
+		if (sheetRef.current) {
+			sheetRef.current.renderer.readonlyTable = readOnlyTable ?? false;
+			sheetRef.current.renderer.render(true);
+		}
 	}, [readOnlyTable]);
 
 	useEffect(() => {
