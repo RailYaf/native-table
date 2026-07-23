@@ -1064,6 +1064,7 @@ export class NativeSheet {
 		}
 		if (Object.keys(changedCells).length > 0 || hasLayout) this._dataDirty = true;
 		this._updateToolbar();
+		this.updateToolbarStyleState();
 		this.model.emit(dir as ChangeAction, changedCells);
 	}
 
@@ -1267,6 +1268,7 @@ export class NativeSheet {
 		this._undoMgr.commit();
 		this._dataDirty = true;
 		this._updateToolbar();
+		this.updateToolbarStyleState();
 		this.model.emit("fill", changedCells);
 		this.renderer.refreshValues();
 	}
@@ -1366,6 +1368,7 @@ export class NativeSheet {
 		this._undoMgr.commit();
 		this._dataDirty = true;
 		this._updateToolbar();
+		this.updateToolbarStyleState();
 		this.model.emit("paste", changedCells);
 		this.setSelectionNoScroll({
 			start: target,
@@ -1400,6 +1403,7 @@ export class NativeSheet {
 		this._undoMgr.commit();
 		this._dataDirty = true;
 		this._updateToolbar();
+		this.updateToolbarStyleState();
 		this.model.emit("clear", changedCells);
 		this.renderer.refreshValues();
 	}
@@ -1426,6 +1430,7 @@ export class NativeSheet {
 			this._undoMgr.commit();
 			this._dataDirty = true;
 			this._updateToolbar();
+			this.updateToolbarStyleState();
 			this.model.emit("edit", { [key]: { old: isEmpty ? null : { ...oldCell }, new: { ...newCell } } });
 		}
 		this.renderer.refreshValues();
