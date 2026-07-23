@@ -34,6 +34,8 @@ export interface NativeTableProps extends Omit<NativeSheetOptions, "onChange"> {
 	readonly?: boolean;
 	/** Текст подсказки (иконка info в тулбаре) */
 	info?: string;
+	/** Перенос текста в заголовках колонок */
+	headerWrap?: boolean;
 }
 
 /** Основной компонент: тулбар + таблица. */
@@ -59,6 +61,7 @@ export function NativeTable({
 	allowAddRows = true,
 	readonly: readOnlyTable,
 	info,
+	headerWrap = false,
 }: NativeTableProps) {
 	/** Ссылка на контейнер таблицы (.nt-container). */
 	const ref = useRef<HTMLDivElement | null>(null);
@@ -86,6 +89,7 @@ export function NativeTable({
 				rows, cols, columns, tableName, initialData, defaultColWidth, defaultRowHeight,
 				headerWidth, headerHeight, bufferRows, bufferCols, disabledRows, allowAddRows,
 				readonly: readOnlyTable,
+				headerWrap,
 				initialWidths: data?.widths as Record<string, number> | undefined,
 				initialHeights: data?.heights as number[] | undefined,
 				initialStyles: data?.styles as Record<string, import("./utils/types").CellStyle> | undefined,
@@ -135,6 +139,13 @@ export function NativeTable({
 		if (sheetRef.current) sheetRef.current.renderer.allowAddRows = allowAddRows;
 		sheetRef.current?.renderer?.render(true);
 	}, [allowAddRows]);
+
+	useEffect(() => {
+		if (sheetRef.current) {
+			sheetRef.current.renderer.headerWrap = headerWrap;
+			sheetRef.current.renderer.render(true);
+		}
+	}, [headerWrap]);
 
 	useEffect(() => {
 		if (sheetRef.current) {

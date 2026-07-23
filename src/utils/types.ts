@@ -83,4 +83,6 @@ export interface NativeSheetOptions {
 	allowAddRows?: boolean;
 	/** Таблица только для чтения */
 	readonly?: boolean;
+	/** Перенос текста в заголовках колонок */
+	headerWrap?: boolean;
 }

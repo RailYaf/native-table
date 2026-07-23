@@ -85,6 +85,8 @@ export class Renderer {
 	allowAddRows = true;
 	/** Таблица только для чтения */
 	readonlyTable = false;
+	/** Перенос текста в заголовках */
+	headerWrap = false;
 	/** Индексы заблокированных строк */
 	disabledRows: Set<number> = new Set();
 	/** Ошибки валидации: cellKey → список сообщений */
@@ -892,8 +894,18 @@ export class Renderer {
 				const resizer = el.querySelector(".nt-resize-handle") as HTMLElement | null;
 				if (resizer) resizer.dataset.col = String(cellInfo.col);
 				label.textContent = cellInfo.label;
+				label.style.whiteSpace = this.headerWrap ? "normal" : "";
+				label.style.wordBreak = this.headerWrap ? "break-word" : "";
 				el.style.width = `${spanWidth}px`;
 				el.style.height = `${cellInfo.rowSpan * HEADER_ROW_HEIGHT}px`;
+				if (this.headerWrap) {
+					el.style.height = "auto";
+					el.style.minHeight = `${cellInfo.rowSpan * HEADER_ROW_HEIGHT}px`;
+				} else {
+					el.style.height = `${cellInfo.rowSpan * HEADER_ROW_HEIGHT}px`;
+				}
+				el.style.padding = this.headerWrap ? "4px 8px" : "0 8px";
+				el.style.alignItems = this.headerWrap ? "flex-start" : "";
 				el.style.left = `${HEADER_WIDTH + this.colLeft(cellInfo.col) - sl}px`;
 				el.style.display = "";
 				el.dataset.col = String(cellInfo.col);
@@ -906,6 +918,38 @@ export class Renderer {
 			for (let i = cells.length; i < row.children.length; i++) {
 				(row.children[i] as HTMLDivElement).style.display = "none";
 			}
+		}
+
+		if (this.headerWrap) {
+			this._fitHeaderRows();
+		}
+	}
+
+	private _fitHeaderRows(): void {
+		let totalH = 0;
+		for (let level = 0; level < this.maxDepth; level++) {
+			const row = this.headerRows[level];
+			let maxH = HEADER_ROW_HEIGHT;
+			for (const el of Array.from(row.children)) {
+				const ht = el as HTMLElement;
+				if (ht.style.display === "none") continue;
+				const h = ht.offsetHeight;
+				if (h > maxH) maxH = h;
+			}
+			row.style.height = `${maxH}px`;
+			row.style.top = `${totalH}px`;
+			for (const el of Array.from(row.children)) {
+				const ht = el as HTMLElement;
+				if (ht.style.display === "none") continue;
+				ht.style.height = `${maxH}px`;
+			}
+			totalH += maxH;
+		}
+		if (totalH !== this.headerH) {
+			this.headerH = totalH;
+			this.bodyDiv.style.top = `${this.headerH}px`;
+			this.headerCol.style.top = `${this.headerH}px`;
+			this.corner.style.height = `${this.headerH}px`;
 		}
 	}
 

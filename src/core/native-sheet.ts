@@ -106,6 +106,7 @@ export class NativeSheet {
 			options.readonly,
 		);
 		this.renderer.disabledRows = this.disabledRows;
+		this.renderer.headerWrap = options.headerWrap ?? false;
 
 		// Применить начальные ширины/высоты/стили из IndexedDB
 		if (options.initialWidths) {
@@ -185,8 +186,16 @@ export class NativeSheet {
 
 	// Bug 2: update both NativeSheet.model AND renderer.model
 	setData(data: Record<string, Cell>): void {
+		const oldStyles = this.collectStyles();
 		this.model = new SheetModel(data);
 		this.model.onChange = this.options.onChange;
+		for (const [key, style] of Object.entries(oldStyles)) {
+			const cell = this.model.getByKey(key);
+			if (cell && cell.value !== null && cell.value !== undefined) {
+				cell.style = style;
+				this.model.setSilentByKey(key, cell);
+			}
+		}
 		this.editor.setModel(this.model);
 		this.renderer.setModel(this.model);
 		this.view.setModel(this.model);
@@ -623,8 +632,7 @@ export class NativeSheet {
 			const c = Number((btn as HTMLElement).dataset.col);
 			const idx = this.view.sortStack.findIndex((s) => s.col === c);
 			const entry = idx >= 0 ? this.view.sortStack[idx] : null;
-			const hasFilter = this.view.filters.has(c);
-			btn.classList.toggle("nt-header-sort-btn--active", !!entry || hasFilter);
+			btn.classList.toggle("nt-header-sort-btn--active", !!entry);
 			if (entry && this.view.sortStack.length > 1) {
 				(btn as HTMLElement).innerHTML = `<span class="nt-sort-num">${idx + 1}</span>` + (entry.asc ? svgUp : svgDown);
 			} else if (entry) {
