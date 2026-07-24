@@ -79,6 +79,8 @@ export function NativeTable({
 	const [lastBg, setLastBg] = useState("#c8e6c9");
 	const [lastFg, setLastFg] = useState("#000000");
 
+	const effectiveAllowAddRows = readOnlyTable ? false : allowAddRows;
+
 	// ── Mount: загрузка из IndexedDB → создание NativeSheet ───────────────────
 	useEffect(() => {
 		if (!ref.current || !tableName) return;
@@ -87,7 +89,7 @@ export function NativeTable({
 			if (cancelled || !ref.current) return;
 			const sheet = new NativeSheet(ref.current, {
 				rows, cols, columns, tableName, initialData, defaultColWidth, defaultRowHeight,
-				headerWidth, headerHeight, bufferRows, bufferCols, disabledRows, allowAddRows,
+				headerWidth, headerHeight, bufferRows, bufferCols, disabledRows, allowAddRows: effectiveAllowAddRows,
 				readonly: readOnlyTable,
 				headerWrap,
 				initialWidths: data?.widths as Record<string, number> | undefined,
@@ -136,9 +138,9 @@ export function NativeTable({
 	}, [readOnlyTable]);
 
 	useEffect(() => {
-		if (sheetRef.current) sheetRef.current.renderer.allowAddRows = allowAddRows;
+		if (sheetRef.current) sheetRef.current.renderer.allowAddRows = effectiveAllowAddRows;
 		sheetRef.current?.renderer?.render(true);
-	}, [allowAddRows]);
+	}, [effectiveAllowAddRows]);
 
 	useEffect(() => {
 		if (sheetRef.current) {
@@ -172,7 +174,7 @@ export function NativeTable({
 
 	// ── Рендер ────────────────────────────────────────────────────────────────
 
-	if (!allowAddRows && rows === 0) {
+	if (!loading && !effectiveAllowAddRows && rows === 0) {
 		return (
 			<div className={`nt-table-wrapper ${className ?? ""}`} style={{ ...style, display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: "14px", minHeight: "120px" }}>
 				Нет данных
