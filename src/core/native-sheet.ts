@@ -141,13 +141,12 @@ export class NativeSheet {
 		);
 		this.editor.setView(this.view);
 
-		// Bug 7: renderer already handles scroll internally via setOnScroll.
-		// NativeSheet must NOT add its own scroll listener to avoid double render.
+		// Renderer сам обрабатывает скролл через setOnScroll, свой не нужен
 		this.renderer.setOnScroll(() => {
 			this.overlay.update(this.selection);
 		});
 
-		// Store handlers for removal in destroy() (Bug 3+4)
+		// Сохранить обработчики для удаления в destroy()
 		this.onMouseDownHandler = (e) => this.onMouseDown(e);
 		this.onDoubleClickHandler = (e) => this.onDoubleClick(e);
 		this.onKeyDownHandler = (e) => this.onKeyDown(e);
@@ -184,7 +183,7 @@ export class NativeSheet {
 		return this.model.getAll();
 	}
 
-	// Bug 2: update both NativeSheet.model AND renderer.model
+	// setData: обновить и NativeSheet.model, и renderer.model
 	setData(data: Record<string, Cell>): void {
 		const oldStyles = this.collectStyles();
 		this.model = new SheetModel(data);
@@ -234,7 +233,7 @@ export class NativeSheet {
 	destroy(): void {
 		if (this.destroyed) return;
 		this.destroyed = true;
-		// Bug 3+4: remove all listeners before destroying DOM
+		// Очистить все обработчики перед удалением DOM
 		this.container.removeEventListener("mousedown", this.onMouseDownHandler);
 		this.container.removeEventListener("dblclick", this.onDoubleClickHandler);
 		this.container.removeEventListener("click", this.onCheckboxClickHandler);
@@ -513,7 +512,7 @@ export class NativeSheet {
 			}
 		};
 
-		// Input change → update apply button
+		// Инпут меняется → обновить кнопку Применить
 		const inputEl = this.sortFilterPopup.querySelector(`#sf-val-${col}`) as HTMLInputElement;
 		if (inputEl) inputEl.addEventListener("input", updateApplyBtn);
 		const inputEl2 = this.sortFilterPopup.querySelector(`#sf-val2-${col}`) as HTMLInputElement;
@@ -580,7 +579,7 @@ export class NativeSheet {
 			});
 		}
 
-		// Clear
+		// Сбросить
 		const clearBtn = this.sortFilterPopup.querySelector(".nt-sf-btn--clear");
 		if (clearBtn) {
 			clearBtn.addEventListener("mousedown", (ev) => ev.preventDefault());
@@ -711,7 +710,7 @@ export class NativeSheet {
 			return;
 		}
 
-		// Resize handle (column)
+		// Ручка ресайза колонки
 		if (target.classList.contains("nt-resize-handle") && !target.classList.contains("nt-resize-handle-row")) {
 			const col = Number(target.dataset.col);
 			if (!Number.isNaN(col)) this.startColResize(col, e.clientX);
@@ -719,7 +718,7 @@ export class NativeSheet {
 			return;
 		}
 
-		// Resize handle (row)
+		// Ручка ресайза строки
 		if (target.classList.contains("nt-resize-handle-row")) {
 			const row = Number(target.dataset.row);
 			if (!Number.isNaN(row)) this.startRowResize(row, e.clientY);
@@ -1418,7 +1417,7 @@ export class NativeSheet {
 		this.renderer.refreshValues();
 	}
 
-	// Bug 8: direction tells us where to move cursor after commit
+	// direction — куда перевести курсор после завершения редактирования
 	private commitEdit(
 		row: number,
 		col: number,

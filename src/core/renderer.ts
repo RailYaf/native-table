@@ -227,7 +227,7 @@ export class Renderer {
 	}
 
 	// ──────────────────────────────────────────────────────────────────────
-	// Public API
+	// Публичные методы
 	// ──────────────────────────────────────────────────────────────────────
 
 	setOnScroll(cb: () => void): void {
@@ -577,7 +577,7 @@ export class Renderer {
 			this.refreshValues();
 		}
 
-		// Headers always re-laid-out (scroll offset may have changed)
+		// Заголовки перекладываются всегда (скролл-оффсет меняется)
 		this.layoutHeader(sc, ec);
 		this.layoutRowHeader(sr, er);
 
@@ -604,7 +604,7 @@ export class Renderer {
 	}
 
 	// ──────────────────────────────────────────────────────────────────────
-	// Private
+	// Приватные методы
 	// ──────────────────────────────────────────────────────────────────────
 
 	private toggleHeaderClass(el: HTMLElement, idx: number, axis: "col" | "row"): void {
@@ -646,7 +646,7 @@ export class Renderer {
 		}
 		er = Math.min(this.visibleRowCount() - 1, er);
 
-		// Find first visible column
+		// Найти первую видимую колонку
 		let sc = 0;
 		{
 			let rem = scrollLeft;
@@ -714,13 +714,13 @@ export class Renderer {
 	private layoutRows(sr: number, er: number, sc: number, ec: number): void {
 		const needed = er - sr + 1;
 
-		// Remove surplus row DOM nodes
+		// Удалить лишние DOM-ноды строк
 		while (this.rows.length > needed) {
 			const pool = this.rows.pop();
 			pool?.el.remove();
 		}
 
-		// Grow or reuse pools
+		// Добрать или переиспользовать пулы
 		while (this.rows.length < needed) {
 			const el = document.createElement("div");
 			el.className = "nt-row";
@@ -748,7 +748,7 @@ export class Renderer {
 	): void {
 		const count = ec - sc + 1;
 
-		// Grow cell pool
+		// Добрать ячейки в пуле
 		while (pool.cells.length < count) {
 			const cell = document.createElement("div");
 			cell.className = "nt-cell";
@@ -756,7 +756,7 @@ export class Renderer {
 			pool.cells.push(cell);
 		}
 
-		// Update visible cells
+		// Обновить видимые ячейки
 		for (let i = 0; i < count; i++) {
 			const c = sc + i;
 			const colDef = this.columns[c];
@@ -770,19 +770,18 @@ export class Renderer {
 			el.dataset.col = String(c);
 			el.dataset.row = String(row);
 			const isPhantom = this.hasExplicitColumns && !colDef;
-			const isOverscanRow = !this.allowAddRows && row >= this.initialRowCount;
-			const isDisabledRow = this.disabledRows.has(this.dataRow(row)) || isOverscanRow;
-			const isReadOnlyCol = !this.readonlyTable && !!colDef?.readOnly && !isPhantom && !isOverscanRow;
-			el.classList.toggle("nt-cell--phantom", isPhantom || isOverscanRow);
+			const isDisabledRow = this.disabledRows.has(this.dataRow(row));
+			const isReadOnlyCol = !this.readonlyTable && !!colDef?.readOnly && !isPhantom;
+			el.classList.toggle("nt-cell--phantom", isPhantom);
 			el.classList.toggle("nt-cell--disabled", isDisabledRow);
 			el.classList.toggle("nt-cell--readonly", isReadOnlyCol);
-			el.style.cursor = (isPhantom || isOverscanRow || this.readonlyTable) ? "default" : "";
+			el.style.cursor = (isPhantom || this.readonlyTable) ? "default" : "";
 			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef);
 			// Индикатор ошибки валидации
 			this.updateCellError(el, c, this.dataRow(row));
 		}
 
-		// Hide excess cells
+		// Скрыть лишние ячейки
 		for (let i = count; i < pool.cells.length; i++) {
 			pool.cells[i].style.display = "none";
 		}
@@ -958,22 +957,13 @@ export class Renderer {
 			el.style.top = `${this.rowTop(r) - st}px`;
 			el.style.display = "";
 			el.dataset.row = String(r);
-			const isOverscan = !this.allowAddRows && r >= this.initialRowCount;
-			// Resize handle — только не для фантомных строк
-			if (!isOverscan) {
-				let rh = el.querySelector(".nt-resize-handle-row") as HTMLElement | null;
-				if (!rh) {
-					rh = document.createElement("div");
-					rh.className = "nt-resize-handle nt-resize-handle-row";
-					rh.dataset.row = String(r);
-					el.append(rh);
-				}
-			} else {
-				const rh = el.querySelector(".nt-resize-handle-row") as HTMLElement | null;
-				if (rh) rh.remove();
+			let rh = el.querySelector(".nt-resize-handle-row") as HTMLElement | null;
+			if (!rh) {
+				rh = document.createElement("div");
+				rh.className = "nt-resize-handle nt-resize-handle-row";
+				rh.dataset.row = String(r);
+				el.append(rh);
 			}
-			el.classList.toggle("nt-header-cell--disabled", isOverscan);
-			el.style.cursor = isOverscan ? "default" : "";
 			this.toggleHeaderClass(el, r, "row");
 		}
 		for (let i = needed; i < this.headerCol.children.length; i++) {
@@ -996,7 +986,7 @@ function applyStyle(
 	cell: Cell,
 	colDef?: ColumnDef,
 ): void {
-	// Apply cell styles
+	// Применить стили ячейки
 	const style = cell.style;
 	el.style.backgroundColor = style?.background ?? "";
 	el.style.color = style?.color ?? "";
@@ -1008,7 +998,7 @@ function applyStyle(
 	if (style?.valign === "top") el.style.alignItems = "flex-start";
 	else if (style?.valign === "bottom") el.style.alignItems = "flex-end";
 	else el.style.alignItems = "center";
-	// cell style align overrides column default (flex container needs justify-content)
+	// Выравнивание из стиля важнее дефолта колонки (flex-контейнеру нужен justify-content)
 	const align = style?.align ?? (colDef ? getCellAlign(colDef) : undefined);
 	if (align === "right") el.style.justifyContent = "flex-end";
 	else if (align === "center") el.style.justifyContent = "center";
