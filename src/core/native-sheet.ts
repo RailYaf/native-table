@@ -164,11 +164,13 @@ export class NativeSheet {
 			this.contextMenu = document.createElement("div");
 			this.contextMenu.className = "nt-context-menu";
 			this.contextMenu.style.display = "none";
+			this._syncPopupTheme(this.contextMenu);
 			document.body.append(this.contextMenu);
 
 			this.sortFilterPopup = document.createElement("div");
 			this.sortFilterPopup.className = "nt-sort-filter-popup";
 			this.sortFilterPopup.style.display = "none";
+			this._syncPopupTheme(this.sortFilterPopup);
 			document.body.append(this.sortFilterPopup);
 
 		this.renderer.render(true);
@@ -177,6 +179,25 @@ export class NativeSheet {
 			end: { row: 0, col: 0 },
 		});
 		this.container.focus();
+	}
+
+	private _syncPopupTheme(el: HTMLElement): void {
+		if (!this.container.classList.contains("nt-dark")) return;
+		const style = getComputedStyle(this.container);
+		el.style.setProperty("--nt-bg", style.getPropertyValue("--nt-bg"));
+		el.style.setProperty("--nt-border", style.getPropertyValue("--nt-border"));
+		el.style.setProperty("--nt-text", style.getPropertyValue("--nt-text"));
+		el.style.setProperty("--nt-text-heading", style.getPropertyValue("--nt-text-heading"));
+		el.style.setProperty("--nt-text-muted", style.getPropertyValue("--nt-text-muted"));
+		el.style.setProperty("--nt-bg-phantom", style.getPropertyValue("--nt-bg-phantom"));
+		el.style.setProperty("--nt-bg-header", style.getPropertyValue("--nt-bg-header"));
+		el.style.setProperty("--nt-bg-button-hover", style.getPropertyValue("--nt-bg-button-hover"));
+		el.style.setProperty("--nt-bg-active", style.getPropertyValue("--nt-bg-active"));
+		el.style.setProperty("--nt-accent", style.getPropertyValue("--nt-accent"));
+		el.style.setProperty("--nt-accent-dark", style.getPropertyValue("--nt-accent-dark"));
+		el.style.setProperty("--nt-shadow", style.getPropertyValue("--nt-shadow"));
+		el.style.setProperty("--nt-shadow-sm", style.getPropertyValue("--nt-shadow-sm"));
+		el.style.setProperty("--nt-text-inverse", style.getPropertyValue("--nt-text-inverse"));
 	}
 
 	getData(): Record<string, Cell> {
@@ -416,6 +437,7 @@ export class NativeSheet {
 				this.hideFilterChildPopup();
 				const popup = document.createElement("div");
 				popup.className = "nt-sf-child-popup";
+				this._syncPopupTheme(popup);
 				const selectedOp = (filterMenuItem as HTMLElement).dataset.op ?? "values";
 				for (const op of filterOps) {
 					const item = document.createElement("div");
@@ -973,6 +995,7 @@ export class NativeSheet {
 		this.hideFilterChildPopup();
 		const popup = document.createElement("div");
 		popup.className = "nt-sf-child-popup";
+		this._syncPopupTheme(popup);
 		popup.style.display = "flex";
 		popup.style.flexDirection = "column";
 		popup.style.gap = "4px";

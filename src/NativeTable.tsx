@@ -36,6 +36,8 @@ export interface NativeTableProps extends Omit<NativeSheetOptions, "onChange"> {
 	info?: string;
 	/** Перенос текста в заголовках колонок */
 	headerWrap?: boolean;
+	/** Тема: "light" | "dark" */
+	theme?: "light" | "dark";
 }
 
 /** Основной компонент: тулбар + таблица. */
@@ -62,6 +64,7 @@ export function NativeTable({
 	readonly: readOnlyTable,
 	info,
 	headerWrap = false,
+	theme,
 }: NativeTableProps) {
 	/** Ссылка на контейнер таблицы (.nt-container). */
 	const ref = useRef<HTMLDivElement | null>(null);
@@ -76,8 +79,8 @@ export function NativeTable({
 	validationErrorsRef.current = validationErrors;
 
 	// Состояние color picker'ов (заливка и текст)
-	const [lastBg, setLastBg] = useState("#c8e6c9");
-	const [lastFg, setLastFg] = useState("#000000");
+	const [lastBg, setLastBg] = useState("var(--nt-bg-selected, #c8e6c9)");
+	const [lastFg, setLastFg] = useState("var(--nt-text, #000000)");
 
 	const effectiveAllowAddRows = readOnlyTable ? false : allowAddRows;
 
@@ -176,21 +179,20 @@ export function NativeTable({
 
 	if (!loading && !effectiveAllowAddRows && rows === 0) {
 		return (
-			<div className={`nt-table-wrapper ${className ?? ""}`} style={{ ...style, display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: "14px", minHeight: "120px" }}>
+			<div className={`nt-table-wrapper ${className ?? ""}`} style={{ ...style, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--nt-text-muted, #999)", fontSize: "14px", minHeight: "120px" }}>
 				Нет данных
 			</div>
 		);
 	}
 
 	return (
-		<div className={`nt-table-wrapper ${className ?? ""}`} style={{ position: "relative" }}
+		<div className={`nt-table-wrapper ${className ?? ""}${theme === "dark" ? " nt-dark" : ""}`} style={{ position: "relative" }}
 			onMouseDownCapture={() => ref.current?.focus()}
 		>
 			{loading && (
-				<div style={{
+				<div className="nt-loading-overlay" style={{
 					position: "absolute", inset: 0, zIndex: 99,
-					background: "rgba(255,255,255,0.6)", display: "flex",
-					alignItems: "center", justifyContent: "center",
+					display: "flex", alignItems: "center", justifyContent: "center",
 				}}>
 					<div className="nt-loading-spinner" />
 				</div>
@@ -231,7 +233,7 @@ export function NativeTable({
 				)}
 			</div>
 			{/* Контейнер для NativeSheet — .nt-root создаётся внутри конструктора */}
-			<div ref={ref} className="nt-container" style={style} />
+			<div ref={ref} className={`nt-container${theme === "dark" ? " nt-dark" : ""}`} style={style} />
 		</div>
 	);
 }
