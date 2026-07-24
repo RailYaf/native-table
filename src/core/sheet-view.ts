@@ -172,8 +172,8 @@ export class SheetView {
 			});
 		}
 
-		// matching + nonMatching (непрошедшие фильтр — в конец)
-		this.rowMap = [...matching, ...nonMatching];
+		// Только прошедшие фильтр строки (непрошедшие скрыты)
+		this.rowMap = matching;
 	}
 }
 
