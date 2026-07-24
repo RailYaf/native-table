@@ -552,6 +552,12 @@ export class Renderer {
 				this.updateContainerSizes();
 			}
 		}
+		if (!this.allowAddRows && this.totalRows > this.initialRowCount) {
+			this.rowHeights = this.rowHeights.slice(0, this.initialRowCount);
+			this.rowMap = Array.from({ length: this.initialRowCount }, (_, i) => i);
+			this.totalRows = this.initialRowCount;
+			this.baseRowCount = this.totalRows;
+		}
 		const { sr, er, sc, ec } = this.computeWindow();
 		const windowChanged =
 			force ||
@@ -574,6 +580,15 @@ export class Renderer {
 		// Headers always re-laid-out (scroll offset may have changed)
 		this.layoutHeader(sc, ec);
 		this.layoutRowHeader(sr, er);
+
+		// Подогнать высоту контейнера под контент
+		this.fitContainerHeight();
+	}
+
+	private fitContainerHeight(): void {
+		if (this.allowAddRows) return;
+		const contentH = this.headerH + this.totalHeight() + 20;
+		this.container.style.height = `${Math.max(0, contentH)}px`;
 	}
 
 	refreshValues(): void {
