@@ -881,10 +881,8 @@ export class Renderer {
 				label.style.whiteSpace = this.headerWrap ? "normal" : "";
 				label.style.wordBreak = this.headerWrap ? "break-word" : "";
 				el.style.width = `${spanWidth}px`;
-				el.style.height = `${cellInfo.rowSpan * HEADER_ROW_HEIGHT}px`;
 				if (this.headerWrap) {
-					el.style.height = "auto";
-					el.style.minHeight = `${cellInfo.rowSpan * HEADER_ROW_HEIGHT}px`;
+					el.style.height = `${cellInfo.rowSpan * (row.offsetHeight || HEADER_ROW_HEIGHT)}px`;
 				} else {
 					el.style.height = `${cellInfo.rowSpan * HEADER_ROW_HEIGHT}px`;
 				}
@@ -939,6 +937,22 @@ export class Renderer {
 			this.headerCol.style.top = `${this.headerH}px`;
 			this.corner.style.height = `${this.headerH}px`;
 		}
+		// Ячейки с rowSpan — сумма высот всех охватываемых строк
+		for (const h of this.headerGrid) {
+			if (h.rowSpan <= 1) continue;
+			const row = this.headerRows[h.row];
+			let sumH = 0;
+			for (let r = h.row; r < h.row + h.rowSpan && r < this.maxDepth; r++) {
+				sumH += parseFloat(this.headerRows[r].style.height) || HEADER_ROW_HEIGHT;
+			}
+			for (const el of Array.from(row.children)) {
+				const ht = el as HTMLElement;
+				if (Number(ht.dataset.col) === h.col && ht.style.display !== "none") {
+					ht.style.height = `${sumH}px`;
+				}
+			}
+		}
+		if (this.selectedRect) this.highlightHeaders(this.selectedRect);
 	}
 
 	private layoutRowHeader(sr: number, er: number): void {
