@@ -61,6 +61,12 @@
 	--nt-loading-overlay: rgba(0,0,0,0.5);
 }
 
+.nt-dark ::-webkit-scrollbar { width: 10px; height: 10px; }
+.nt-dark ::-webkit-scrollbar-track { background: #2a2a2a; }
+.nt-dark ::-webkit-scrollbar-thumb { background: #555; border-radius: 5px; }
+.nt-dark ::-webkit-scrollbar-thumb:hover { background: #777; }
+.nt-dark ::-webkit-scrollbar-corner { background: #2a2a2a; }
+
 /* ── Стили ────────────────────────────────────────────────────────────────── */
 
 .nt-container {
