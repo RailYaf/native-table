@@ -778,3 +778,46 @@
 .nt-loading-overlay {
 	background: var(--nt-loading-overlay);
 }
+
+/* Тёмная тема для попапов на body (вне .nt-table-wrapper) */
+[data-nt-theme="light"] .nt-sort-filter-popup,
+[data-nt-theme="light"] .nt-sf-child-popup,
+[data-nt-theme="light"] .nt-context-menu,
+[data-nt-theme="light"] .nt-error-popup,
+[data-nt-theme="dark"] .nt-sort-filter-popup,
+[data-nt-theme="dark"] .nt-sf-child-popup,
+[data-nt-theme="dark"] .nt-context-menu,
+[data-nt-theme="dark"] .nt-error-popup {
+	--nt-bg: #fff;
+	--nt-border: #e0e0e0;
+	--nt-text: #555;
+	--nt-text-heading: #333;
+	--nt-text-muted: #999;
+	--nt-bg-header: #f5f5f5;
+	--nt-bg-button-hover: #eee;
+	--nt-bg-phantom: #f0f0f0;
+	--nt-accent: #2e7d32;
+	--nt-accent-dark: #1b5e20;
+	--nt-shadow: 0 2px 12px rgba(0,0,0,0.15);
+	--nt-shadow-sm: 0 2px 8px rgba(0,0,0,0.12);
+	--nt-text-inverse: #fff;
+}
+
+[data-nt-theme="dark"] .nt-sort-filter-popup,
+[data-nt-theme="dark"] .nt-sf-child-popup,
+[data-nt-theme="dark"] .nt-context-menu,
+[data-nt-theme="dark"] .nt-error-popup {
+	--nt-bg: #1e1e1e;
+	--nt-border: #444;
+	--nt-text: #ccc;
+	--nt-text-heading: #ddd;
+	--nt-text-muted: #777;
+	--nt-bg-header: #2a2a2a;
+	--nt-bg-button-hover: #3a3a3a;
+	--nt-bg-phantom: #252525;
+	--nt-accent: #4caf50;
+	--nt-accent-dark: #388e3c;
+	--nt-shadow: 0 2px 12px rgba(0,0,0,0.4);
+	--nt-shadow-sm: 0 2px 8px rgba(0,0,0,0.35);
+	--nt-text-inverse: #fff;
+}

@@ -697,12 +697,6 @@ export class Renderer {
 		this.hideErrorPopup();
 		const popup = document.createElement("div");
 		popup.className = "nt-error-popup";
-		if (this.container.classList.contains("nt-dark")) {
-			const style = getComputedStyle(this.container);
-			popup.style.setProperty("--nt-bg", style.getPropertyValue("--nt-bg"));
-			popup.style.setProperty("--nt-border", style.getPropertyValue("--nt-border"));
-			popup.style.setProperty("--nt-text", style.getPropertyValue("--nt-text"));
-		}
 		popup.innerHTML = errors.map((e) => `<div class="nt-error-popup-item">${e}</div>`).join("");
 		const rect = anchor.getBoundingClientRect();
 		popup.style.left = `${rect.right + 4}px`;

@@ -84,6 +84,11 @@ export function NativeTable({
 
 	const effectiveAllowAddRows = readOnlyTable ? false : allowAddRows;
 
+	useEffect(() => {
+		document.documentElement.setAttribute("data-nt-theme", theme ?? "light");
+		return () => { document.documentElement.removeAttribute("data-nt-theme"); };
+	}, [theme]);
+
 	// ── Mount: загрузка из IndexedDB → создание NativeSheet ───────────────────
 	useEffect(() => {
 		if (!ref.current || !tableName) return;
