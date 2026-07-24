@@ -512,8 +512,8 @@ export class Renderer {
 	 */
 	scrollToCell(row: number, col: number): void {
 		const top = this.rowTop(row);
-		const left = HEADER_WIDTH + this.colLeft(col);
-		const right = left + this.colWidths[col];
+		const cellLeft = this.colLeft(col);
+		const cellRight = cellLeft + this.colWidths[col];
 		const bottom = top + this.getRowHeight(row);
 		const { scrollTop, scrollLeft, clientWidth, clientHeight } = this.bodyDiv;
 		if (top < scrollTop) {
@@ -521,10 +521,10 @@ export class Renderer {
 		} else if (bottom > scrollTop + clientHeight) {
 			this.bodyDiv.scrollTop = bottom - clientHeight;
 		}
-		if (left < scrollLeft) {
-			this.bodyDiv.scrollLeft = left;
-		} else if (right > scrollLeft + clientWidth) {
-			this.bodyDiv.scrollLeft = right - clientWidth;
+		if (cellLeft < scrollLeft) {
+			this.bodyDiv.scrollLeft = cellLeft;
+		} else if (HEADER_WIDTH + cellRight > scrollLeft + clientWidth) {
+			this.bodyDiv.scrollLeft = HEADER_WIDTH + cellRight - clientWidth;
 		}
 	}
 
