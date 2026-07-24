@@ -172,6 +172,14 @@ export function NativeTable({
 
 	// ── Рендер ────────────────────────────────────────────────────────────────
 
+	if (!allowAddRows && rows === 0) {
+		return (
+			<div className={`nt-table-wrapper ${className ?? ""}`} style={{ ...style, display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: "14px", minHeight: "120px" }}>
+				Нет данных
+			</div>
+		);
+	}
+
 	return (
 		<div className={`nt-table-wrapper ${className ?? ""}`} style={{ position: "relative" }}
 			onMouseDownCapture={() => ref.current?.focus()}
