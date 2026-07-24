@@ -577,11 +577,9 @@ export class Renderer {
 			this.refreshValues();
 		}
 
-		// Заголовки перекладываются всегда (скролл-оффсет меняется)
+	// Заголовки перекладываются всегда (скролл-оффсет меняется)
 		this.layoutHeader(sc, ec);
 		this.layoutRowHeader(sr, er);
-
-		// Подогнать высоту контейнера под контент
 		this.fitContainerHeight();
 	}
 
@@ -913,23 +911,27 @@ export class Renderer {
 		}
 
 		if (this.headerWrap) {
-			this._fitHeaderRows();
+			this._recalcHeaderHeights();
 		}
 	}
 
-	private _fitHeaderRows(): void {
+	private _recalcHeaderHeights(): void {
 		let totalH = 0;
 		for (let level = 0; level < this.maxDepth; level++) {
-			const row = this.headerRows[level];
 			let maxH = HEADER_ROW_HEIGHT;
-			for (const el of Array.from(row.children)) {
-				const ht = el as HTMLElement;
-				if (ht.style.display === "none") continue;
-				const h = ht.offsetHeight;
-				if (h > maxH) maxH = h;
+			for (const h of this.headerGrid) {
+				if (h.row !== level || h.colSpan === 0) continue;
+				const spanW = this.colWidths.slice(h.col, h.col + h.colSpan).reduce((a, b) => a + b, 0);
+				const availableW = Math.max(40, spanW - 20); // отступы + иконки
+				const charsPerLine = Math.max(1, Math.floor(availableW / 7)); // ~7px на символ
+				const lines = Math.ceil((h.label || "").length / charsPerLine);
+				const cellH = Math.max(0, lines) * 18 + 16; // line-height + padding
+				if (cellH > maxH) maxH = cellH;
 			}
-			row.style.height = `${maxH}px`;
-			row.style.top = `${totalH}px`;
+			this.headerRows[level].style.height = `${maxH}px`;
+			this.headerRows[level].style.top = `${totalH}px`;
+			// Обновить высоту видимых ячеек
+			const row = this.headerRows[level];
 			for (const el of Array.from(row.children)) {
 				const ht = el as HTMLElement;
 				if (ht.style.display === "none") continue;
