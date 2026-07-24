@@ -208,6 +208,17 @@ export class NativeSheet {
 		this.renderer.rowMap = this.view.rowMap;
 		this.renderer.updateLayout();
 		this.renderer.render(true);
+		const maxR = this.renderer.visibleRowCount() - 1;
+		if (maxR >= 0) {
+			if (!this.selection.start || this.selection.start.row > maxR) {
+				this.selection = { start: { row: 0, col: 0 }, end: { row: 0, col: 0 } };
+			} else if (this.selection.end && this.selection.end.row > maxR) {
+				this.selection.end = { row: maxR, col: this.selection.end.col };
+			}
+		} else {
+			this.selection = { start: null, end: null };
+		}
+		this.renderer.selectedRect = this.selection;
 		this.overlay?.update(this.selection);
 	}
 
@@ -757,9 +768,7 @@ export class NativeSheet {
 			const maxCol = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
 				? this.renderer.dataColCount - 1
 				: this.renderer.totalCols - 1;
-			const maxRow = !this.renderer.allowAddRows && this.renderer.initialRowCount > 0
-				? this.renderer.initialRowCount - 1
-				: this.renderer.totalRows - 1;
+			const maxRow = this.renderer.visibleRowCount() - 1;
 			this.setSelectionNoScroll({
 				start: { row: 0, col: 0 },
 				end: { row: maxRow, col: maxCol },
@@ -776,9 +785,7 @@ export class NativeSheet {
 			const span = Number(colHeader.dataset.colSpan) || 1;
 			if (!Number.isNaN(col)) {
 				const endCol = col + span - 1;
-				const maxRow = !this.renderer.allowAddRows && this.renderer.initialRowCount > 0
-					? this.renderer.initialRowCount - 1
-					: this.renderer.totalRows - 1;
+				const maxRow = this.renderer.visibleRowCount() - 1;
 				if (e.shiftKey && this.selection.start) {
 					const end = { row: maxRow, col: endCol };
 					this.setSelectionNoScroll({ start: this.selection.start, end });
@@ -1123,9 +1130,7 @@ export class NativeSheet {
 			const found = this.renderer.cellAt(x, y);
 			if (found && this.selection.start) {
 				const end = { ...found };
-				const maxRow = !this.renderer.allowAddRows && this.renderer.initialRowCount > 0
-					? this.renderer.initialRowCount - 1
-					: this.renderer.totalRows - 1;
+				const maxRow = this.renderer.visibleRowCount() - 1;
 				if (axis === "row") {
 					end.col = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
 						? this.renderer.dataColCount - 1
@@ -1175,9 +1180,7 @@ export class NativeSheet {
 			const maxCol = this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0
 				? this.renderer.dataColCount - 1
 				: this.renderer.totalCols - 1;
-			const maxRow = !this.renderer.allowAddRows && this.renderer.initialRowCount > 0
-				? this.renderer.initialRowCount - 1
-				: this.renderer.totalRows - 1;
+			const maxRow = this.renderer.visibleRowCount() - 1;
 			let newTop = srcTop;
 			let newBottom = srcBottom;
 			let newLeft = srcLeft;
@@ -1229,9 +1232,9 @@ export class NativeSheet {
 			right = Math.min(right, this.renderer.dataColCount - 1);
 			left = Math.min(left, this.renderer.dataColCount - 1);
 		}
-		if (!this.renderer.allowAddRows && this.renderer.initialRowCount > 0) {
-			bottom = Math.min(bottom, this.renderer.initialRowCount - 1);
-			top = Math.min(top, this.renderer.initialRowCount - 1);
+		if (!this.renderer.allowAddRows) {
+			bottom = Math.min(bottom, this.renderer.visibleRowCount() - 1);
+			top = Math.min(top, this.renderer.visibleRowCount() - 1);
 		}
 		const srcH = srcBottom - srcTop + 1;
 		const changedCells: Record<string, { old: Cell | null; new: Cell | null }> = {};
@@ -1290,7 +1293,7 @@ export class NativeSheet {
 			selection: this.selection,
 			totalRows: this.renderer.totalRows,
 			totalCols: this.renderer.totalCols,
-			maxRow: !this.renderer.allowAddRows && this.renderer.initialRowCount > 0 ? this.renderer.initialRowCount - 1 : undefined,
+			maxRow: !this.renderer.allowAddRows ? this.renderer.visibleRowCount() - 1 : undefined,
 			maxCol: this.renderer.hasExplicitColumns && this.renderer.dataColCount > 0 ? this.renderer.dataColCount - 1 : undefined,
 			isEditing: false,
 			setSelection: (rect) => this.setSelection(rect),
@@ -1440,10 +1443,10 @@ export class NativeSheet {
 			this.model.emit("edit", { [key]: { old: isEmpty ? null : { ...oldCell }, new: { ...newCell } } });
 		}
 		this.renderer.refreshValues();
-		const { totalRows, totalCols } = this.renderer;
+		const { totalCols } = this.renderer;
 		let nextRow = row;
 		let nextCol = col;
-		if (direction === "enter") nextRow = Math.min(row + 1, totalRows - 1);
+		if (direction === "enter") nextRow = Math.min(row + 1, this.renderer.visibleRowCount() - 1);
 		else if (direction === "tab") nextCol = Math.min(col + 1, totalCols - 1);
 		else if (direction === "shift-tab") nextCol = Math.max(col - 1, 0);
 		this.setSelection({
