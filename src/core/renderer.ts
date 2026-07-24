@@ -366,7 +366,7 @@ export class Renderer {
 
 	/** Гарантировать, что существует как минимум строка с индексом `row`. */
 	ensureRows(row: number): void {
-		if (row < this.totalRows) return;
+		if (!this.allowAddRows || row < this.totalRows) return;
 		const needed = row + 1 + OVERSCAN_ROWS;
 		while (this.rowHeights.length < needed) {
 			this.rowHeights.push(DEFAULT_ROW_HEIGHT);
@@ -549,34 +549,6 @@ export class Renderer {
 					this.totalCols = this.colWidths.length;
 				}
 				this.rebuildColLeftCache();
-				this.updateContainerSizes();
-			}
-		}
-		// Заполнить viewport по вертикали (allowAddRows=false)
-		if (!this.allowAddRows) {
-			const bodyH = this.bodyDiv.clientHeight;
-			if (bodyH > 0) {
-				this.rowHeights = this.rowHeights.slice(0, this.initialRowCount);
-				this.rowMap = this.rowMap.slice(0, this.initialRowCount);
-				this.totalRows = this.initialRowCount;
-				const targetH = Math.max(bodyH - 2, 0);
-				const totalH = this.totalHeight();
-				if (totalH < targetH) {
-					const gap = targetH - totalH;
-					const fullRows = Math.floor(gap / DEFAULT_ROW_HEIGHT);
-					const remainder = gap - fullRows * DEFAULT_ROW_HEIGHT;
-					for (let i = 0; i < fullRows; i++) {
-						this.rowHeights.push(DEFAULT_ROW_HEIGHT);
-						this.rowMap.push(this.totalRows + i);
-					}
-					if (remainder > 0) {
-						this.rowHeights.push(remainder);
-						this.rowMap.push(this.totalRows + fullRows);
-					}
-					this.totalRows = this.rowHeights.length;
-					this.baseRowCount = this.totalRows;
-				}
-				this.rebuildRowTopCache();
 				this.updateContainerSizes();
 			}
 		}
