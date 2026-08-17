@@ -282,7 +282,7 @@ export class NativeSheet {
 		// Синхронизировать количество строк с новыми данными
 		const drc = dataRowCount(data);
 		this.renderer.setDataRows(drc);
-		this.view.setTotalRows(drc);
+		this.view.resetRows(drc);
 		this.undoManager.clear();
 
 		// Пагинация: управляем auto-expand и клипим строки
