@@ -1,4 +1,4 @@
-import type { ColumnDef, DataChange, HeaderConfig, LayoutData, PaginationConfig, SortFilterSnapshot, ValidationError, CellStyle, ToolbarConfig, CellConfig, ChangeItem } from "./utils/types";
+import type { ColumnDef, HeaderConfig, LayoutData, PaginationConfig, SortFilterSnapshot, ValidationError, CellStyle, ToolbarConfig, CellConfig, ChangeItem } from "./utils/types";
 
 export type { ToolbarButton, ToolbarConfig } from "./utils/types";
 
@@ -12,7 +12,7 @@ export interface NativeTableProps {
 	/** Имя поля в data, которое использовать как id строки (по умолчанию "id") */
 	rowKey?: string;
 	/** Вызывается при любом изменении данных */
-	onChange?: (changes: DataChange[]) => void;
+	onChange?: (allRows: Record<string, unknown>[], changes: ChangeItem[]) => void;
 	/**
 	 * Вызывается при сохранении (Ctrl+S / кнопка):
 	 * allRows — все строки таблицы, changes — гранулярные изменения

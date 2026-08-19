@@ -15,6 +15,7 @@ export class SelectionOverlay {
 	private copyRange: HTMLDivElement;
 	private fillHandle: HTMLDivElement;
 	private editing = false;
+	private lastSelection: SelectionRect | null = null;
 
 	constructor(
 		cellsLayer: HTMLDivElement,
@@ -27,14 +28,15 @@ export class SelectionOverlay {
 		this.copyRange.style.display = "none";
 		this.fillHandle = document.createElement("div");
 		this.fillHandle.className = "nt-fill-handle";
-		cellsLayer.append(this.range, this.copyRange);
-		// Fill handle живёт в container (не в bodyDiv), чтобы его z-index был
-		// в том же stacking context, что и fixed-слои (z-index 5).
-		renderer.container.append(this.fillHandle);
+		cellsLayer.append(this.range);
+		// Copy-range и fill-handle живут в container (не в bodyDiv), чтобы их
+		// z-index был в том же stacking context, что и fixed-слои (z-index 5)
+		renderer.container.append(this.copyRange, this.fillHandle);
 	}
 
 	/** Обновить позицию и размеры оверлея по текущему выделению. */
 	update(selection: SelectionRect): void {
+		this.lastSelection = selection;
 		const rect = normRect(selection);
 		if (!rect || this.renderer.visibleRowCount() === 0) {
 			this.range.style.display = "none";
@@ -113,7 +115,7 @@ export class SelectionOverlay {
 				? bodyDiv.clientWidth - (fixedRightTotalW - fixedRightCompact[stuckRightStartIdx])
 				: bodyDiv.clientWidth;
 
-			if (containerRight <= leftZoneEnd || containerRight >= rightZoneStart) {
+			if (containerRight < leftZoneEnd || containerRight > rightZoneStart) {
 				this.fillHandle.style.display = "none";
 				return;
 			}
@@ -127,6 +129,13 @@ export class SelectionOverlay {
 	setEditing(editing: boolean): void {
 		this.editing = editing;
 		this.fillHandle.style.display = this.renderer.readOnly || this.editing ? "none" : "block";
+		// Во время редактирования прячем зелёную рамку выделения —
+		// под прозрачным select-триггером она просвечивает сквозь ячейку
+		if (this.editing) {
+			this.range.style.display = "none";
+		} else if (this.lastSelection) {
+			this.update(this.lastSelection);
+		}
 	}
 
 	/** Показать пунктирную рамку копирования (после Ctrl+C). */
@@ -136,16 +145,40 @@ export class SelectionOverlay {
 			this.hideCopyRange();
 			return;
 		}
-		const left = this.renderer.colLeft(norm.leftCol);
-		const top = this.renderer.rowTop(norm.topRow);
-		const right = this.renderer.colLeft(norm.rightCol) + this.renderer.getColWidth(norm.rightCol);
-		const bottom = this.renderer.rowTop(norm.bottomRow) + this.renderer.getRowHeight(norm.bottomRow);
+		// Рамка живёт в container — координаты контейнерные, с учётом прилипших fixed-колонок
+		const left = this.containerEdgeX(norm.leftCol, false);
+		const right = this.containerEdgeX(norm.rightCol, true);
+		const top = this.renderer.headerH + this.renderer.rowTop(norm.topRow) - this.renderer.bodyDiv.scrollTop;
+		const bottom = this.renderer.headerH + this.renderer.rowTop(norm.bottomRow) + this.renderer.getRowHeight(norm.bottomRow) - this.renderer.bodyDiv.scrollTop;
 
 		this.copyRange.style.left = `${left}px`;
 		this.copyRange.style.top = `${top}px`;
 		this.copyRange.style.width = `${right - left}px`;
 		this.copyRange.style.height = `${bottom - top}px`;
 		this.copyRange.style.display = "block";
+	}
+
+	/** X границы колонки (левой или правой) в координатах контейнера. */
+	private containerEdgeX(col: number, rightEdge: boolean): number {
+		const r = this.renderer;
+		const w = r.getColWidth(col);
+		const fixedLeftIdx = r.fixedLeftCols.indexOf(col);
+		const fixedRightIdx = r.fixedRightCols.indexOf(col);
+		const nR = r.fixedRightCols.length;
+		const startIdxR = nR - r.currentRightStuckCount;
+		const isStuckLeft = fixedLeftIdx >= 0 && fixedLeftIdx < r.currentStuckCount;
+		const isStuckRight = fixedRightIdx >= 0 && fixedRightIdx >= startIdxR;
+		let x: number;
+		if (isStuckLeft) {
+			x = INDEX_HEADER_WIDTH + r.fixedLeftCompact[fixedLeftIdx];
+		} else if (isStuckRight) {
+			const layerW = r.fixedRightTotalW - r.fixedRightCompact[startIdxR];
+			const p = r.fixedRightCompact[fixedRightIdx] - r.fixedRightCompact[startIdxR];
+			x = r.bodyDiv.clientWidth - layerW + p;
+		} else {
+			x = INDEX_HEADER_WIDTH + r.colLeft(col) - r.bodyDiv.scrollLeft;
+		}
+		return rightEdge ? x + w : x;
 	}
 
 	/** Скрыть рамку копирования. */

@@ -1,13 +1,8 @@
 // ── Редактор ячейки ──────────────────────────────────────────────────────────
 //
-// Редакторы по типу колонки:
-//   1. text/number — <textarea> с авто-ростом (весь текст с переносом)
-//   2. date/datetime — текст + кастомный календарь (datetime — с выбором времени)
-//   3. select — прозрачный триггер + выпадающий список опций (position: absolute)
-//   4. array/json — отдельные редакторы с кнопками Сохранить/Отмена
-//
-// CommitDirection управляет тем, куда перейти после завершения редактирования.
-// Все элементы уничтожаются после commit/cancel.
+// По типу колонки: text/number — textarea с авто-ростом; date/datetime — текст
+// + календарь; select — триггер + выпадающий список; array/json — свои редакторы.
+// CommitDirection задаёт переход после завершения. DOM уничтожается после commit/cancel.
 
 import { formatCellDisplay, getEditValue, isBoolean } from "../utils/column-utils";
 import type { SheetModel } from "../core/model";
@@ -43,6 +38,8 @@ export class Editor {
 		/** Вызывается при commit — передаёт строковое значение и направление */
 		private onCommit: (_row: number, _col: number, _value: string, _direction: CommitDirection) => void,
 		private onCancel: () => void,
+		/** Низ видимой области в координатах host — textarea не растёт за него. */
+		private getViewportBottom?: () => number,
 	) {
 		this.model = model;
 	}
@@ -118,13 +115,6 @@ export class Editor {
 		const list = document.createElement("div");
 		list.className = "nt-select-dropdown-list";
 
-		// Пустой пункт (виден только при пустом поиске)
-		const emptyItem = document.createElement("div");
-		emptyItem.className = "nt-select-dropdown-item";
-		emptyItem.textContent = "—";
-		emptyItem.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); });
-		emptyItem.addEventListener("click", () => { this.commitSelect(""); });
-
 		const noMatches = document.createElement("div");
 		noMatches.className = "nt-select-dropdown-empty";
 		noMatches.textContent = "Ничего не найдено";
@@ -157,17 +147,15 @@ export class Editor {
 					lastVisibleEl = el;
 				}
 			}
-			emptyItem.style.display = q === "" ? "" : "none";
 			lastVisibleEl?.classList.add("nt-select-dropdown-item--no-border");
 			noMatches.style.display = q !== "" && visible === 0 ? "" : "none";
 		});
 
-		list.append(emptyItem);
 		for (const { el } of optionEls) list.append(el);
 		list.append(noMatches);
 		// Изначально линия-разделитель убирается у последнего пункта списка
-		const lastOption = optionEls[optionEls.length - 1]?.el ?? emptyItem;
-		lastOption.classList.add("nt-select-dropdown-item--no-border");
+		const lastOption = optionEls[optionEls.length - 1]?.el;
+		if (lastOption) lastOption.classList.add("nt-select-dropdown-item--no-border");
 		dropdown.append(searchInput, list);
 
 		this.host.append(dropdown);
@@ -415,11 +403,13 @@ export class Editor {
 		textarea.className = "nt-editor nt-editor--textarea";
 		textarea.rows = 1;
 		textarea.spellcheck = false;
+		// При усечении высоты текст внутри прокручивается (скроллбар появляется сам)
+		textarea.style.overflowY = "auto";
 		if (type === "number") textarea.inputMode = "decimal";
 		textarea.value = currentValue;
 		textarea.addEventListener("blur", () => { if (this.active) this.commit("none"); });
 		textarea.addEventListener("keydown", (e) => this.onKeyDown(e));
-		textarea.addEventListener("input", () => this.autoGrowTextarea(textarea, box.height));
+		textarea.addEventListener("input", () => this.autoGrowTextarea(textarea, box.height, box));
 		applyBox(textarea, box);
 		textarea.style.height = "auto";
 		textarea.style.minHeight = `${box.height}px`;
@@ -431,13 +421,37 @@ export class Editor {
 		textarea.classList.add("nt-editor--active");
 		textarea.focus();
 		if (selectAll) textarea.select();
-		this.autoGrowTextarea(textarea, box.height);
+		this.autoGrowTextarea(textarea, box.height, box);
 	}
 
-	/** Растянуть textarea по содержимому (не меньше высоты ячейки; +4px компенсация бордеров). */
-	private autoGrowTextarea(textarea: HTMLTextAreaElement, minHeight: number): void {
+	/**
+	 * Растянуть textarea по содержимому (не меньше высоты ячейки; +4px компенсация бордеров).
+	 * Если вниз не помещается — растёт вверх от ячейки; если текст не влезает
+	 * даже так — занимает видимую область и прокручивается внутри.
+	 */
+	private autoGrowTextarea(
+		textarea: HTMLTextAreaElement,
+		minHeight: number,
+		box: { left: number; top: number; width: number; height: number },
+	): void {
 		textarea.style.height = "auto";
-		textarea.style.height = `${Math.max(minHeight, textarea.scrollHeight + 4)}px`;
+		const desired = Math.max(minHeight, textarea.scrollHeight + 4);
+		const viewportBottom = this.getViewportBottom?.();
+		if (viewportBottom === undefined || box.top + desired <= viewportBottom) {
+			// Влезает вниз — обычный рост от верха ячейки
+			textarea.style.top = `${box.top}px`;
+			textarea.style.height = `${desired}px`;
+			return;
+		}
+		// Не влезает вниз — растём вверх, не выходя за видимую область
+		const top = Math.max(0, viewportBottom - desired);
+		textarea.style.top = `${top}px`;
+		if (desired > viewportBottom - top) {
+			// Огромный текст: капаем по видимой области, остальное — внутренний скролл
+			textarea.style.height = `${Math.max(minHeight, viewportBottom - top)}px`;
+		} else {
+			textarea.style.height = `${desired}px`;
+		}
 	}
 
 	// ── Date-редактор ─────────────────────────────────────────────────────────

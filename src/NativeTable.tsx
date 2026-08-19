@@ -1,22 +1,15 @@
 // ── React-обёртка NativeTable ─────────────────────────────────────────────────
 //
-// Компонент управляет жизненным циклом NativeSheet:
-//   1. Принимает data (массив объектов) + columns (ColumnDef[]) как публичный API
-//   2. Внутри конвертирует data → rows/cols/initialData/rowIds для NativeSheet
-//   3. Применяет заданные ширины/стили (columnWidths/cellStyles)
-//   4. Создаёт NativeSheet и сохраняет в sheetRef
-//   5. Рендерит тулбар (нативные кнопки с data-action)
-//   6. Рендерит div-контейнер для NativeSheet (.nt-container)
-//
-// Колбэки onChange/onSave работают со структурированными данными
-// (DataChange[] / SaveRow[]), а не с A1-ключами.
+// Принимает data + columns (ColumnDef[]), создаёт NativeSheet и управляет его
+// жизненным циклом. Колбэки onChange/onSave работают со структурированными
+// данными (allRows / ChangeItem[]), а не с A1-ключами.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NativeSheet } from "./core/native-sheet";
 import { SaveIcon, UndoIcon, RedoIcon, PaintBucketIcon, TextColorIcon } from "./ui/icons";
 import { dataToCells, cellChangesToDataChanges, cellsToSaveRows, isTempRowId } from "./utils/data-convert";
 import { validateCell } from "./utils/validation";
-import { cellKey, colToLetter } from "./utils/cell-addr";
+import { cellKey, colToLetter, parseCellKey } from "./utils/cell-addr";
 import { TOOLBAR_ICON_SIZE } from "./utils/consts";
 import type { ChangeItem, ScalarCellValue, ToolbarButton, ValidationError } from "./utils/types";
 import type { NativeTableProps } from "./types";
@@ -68,6 +61,24 @@ export function NativeTable({
 	rowIdsRef.current = converted.rowIds;
 	const convertedRef = useRef(converted);
 	convertedRef.current = converted;
+	// Сигнатура колонок по содержимому: защита от пересоздания таблицы,
+	// когда кто-то передаёт новый массив с теми же колонками
+	const columnsKey = useMemo(() => {
+		const sig = (c: typeof columns[number]): string => {
+			return [
+				c.name,
+				c.type,
+				c.label,
+				c.readOnly,
+				String(c.color),
+				String(c.backgroundColor),
+				c.visible,
+				(c.children ?? []).map(sig).join(","),
+			].join("|");
+		};
+		return columns.map(sig).join("\n");
+	}, [columns]);
+	const lastBuiltRef = useRef<{ data: unknown; key: string } | null>(null);
 
 	// Клиентская валидация
 	const [clientErrors, setClientErrors] = useState<ValidationError[]>([]);
@@ -112,24 +123,42 @@ export function NativeTable({
 	const warnRef = useRef(warnMap);
 	warnRef.current = warnMap;
 
-	// ── Mount/обновление: NativeSheet создаётся при первом появлении контейнера,
-	//    дальше данные/колонки обновляются инкрементально (без пересоздания) ──
+	// ── Mount/обновление: простое правило — пересоздавать таблицу, только если
+	//    изменился массив data (по ссылке) или содержимое колонок (по сигнатуре)
+	//    или loading. «Передали данные — отобразили» ──
 	useEffect(() => {
+		// Пока идёт загрузка — не трогаем таблицу вообще: пропсы могут быть
+		// старыми или частичными, таблица построится по факту готовности
+		if (loading) return;
 		// Плейсхолдер «Нет данных» рендерится без контейнера — ждём его появления
 		if (!ref.current) return;
 
-		// Контейнер пересоздан (плейсхолдер ↔ таблица) — пересоздать и таблицу
-		if (sheetRef.current && sheetRef.current.renderer.container !== ref.current) {
+		const conv = convertedRef.current;
+		// Ещё нет колонок — не собирать таблицу по частям: на медленных машинах
+		// данные/колонки приходят порциями
+		if (conv.cols === 0 && !sheetRef.current) return;
+
+		// Те же данные и те же колонки (по содержимому) — ничего не делаем
+		const built = lastBuiltRef.current;
+		const sameContainer = !!sheetRef.current && sheetRef.current.renderer.container === ref.current;
+		if (built && built.data === data && built.key === columnsKey && sameContainer) return;
+		lastBuiltRef.current = { data, key: columnsKey };
+
+		// Данные или колонки поменялись — пересоздать таблицу начисто:
+		// инкрементальные обновления оставляли её в промежуточном состоянии
+		if (sheetRef.current) {
 			sheetRef.current.destroy();
 			sheetRef.current = null;
 		}
+		// Клиентские ошибки привязаны к прежним данным — сбрасываем
+		setClientErrors([]);
 
-		if (!sheetRef.current) {
+		{
 			const sheet = new NativeSheet(ref.current, {
-				rows: converted.rows,
-				cols: converted.cols,
+				rows: conv.rows,
+				cols: conv.cols,
 				columns,
-				initialData: converted.initialData,
+				initialData: conv.initialData,
 				disabledRows,
 				allowAddRows: effectiveAllowAddRows,
 				readOnly,
@@ -141,7 +170,7 @@ export function NativeTable({
 				serverSide,
 				onApplySortFilter,
 				onClearSortFilter,
-				rowIds: converted.rowIds,
+				rowIds: conv.rowIds,
 				columnWidths,
 				cellStyles,
 				sortFilter,
@@ -152,13 +181,16 @@ export function NativeTable({
 					const leafNames = leafNamesRef.current;
 					const rowIds = rowIdsRef.current;
 					const cols = columnsRef.current;
-					const changes = cellChangesToDataChanges(changed, leafNames, rowIds);
-					if (changes.length > 0) {
+					// Живые rowIds (с temp-id новых строк): иначе для новых строк
+					// сгенерируется случайный id
+					const liveRowIds = sheetRef.current?.renderer.rowIds ?? rowIds;
+					const changedCells = cellChangesToDataChanges(changed, leafNames, liveRowIds);
+					if (changedCells.length > 0) {
 						setClientErrors((prev) => {
 							const next = prev.filter((e) =>
-								!changes.some((ch) => ch.rowId === e.rowId && ch.columnName === e.columnName),
+								!changedCells.some((ch) => ch.rowId === e.rowId && ch.columnName === e.columnName),
 							);
-							for (const ch of changes) {
+							for (const ch of changedCells) {
 								const colDef = cols.find((c) => c.name === ch.columnName);
 								if (!colDef?.validationRules) continue;
 								const ci = leafNames.indexOf(ch.columnName);
@@ -174,7 +206,23 @@ export function NativeTable({
 							}
 							return next;
 						});
-						onChangeRef.current?.(changes);
+
+						// Те же аргументы, что и в onSave: все строки + гранулярные изменения
+						const rows = cellsToSaveRows(_cells, leafNames, liveRowIds);
+						const allRows: Record<string, unknown>[] = rows.map((r) => ({ id: r.rowId, ...r.values }));
+						const changes: ChangeItem[] = [];
+						for (const [key, { new: newCell }] of Object.entries(changed)) {
+							const parsed = parseCellKey(key);
+							if (!parsed || parsed.col >= leafNames.length) continue;
+							const rowId = liveRowIds[parsed.row];
+							if (rowId === undefined) continue;
+							changes.push({
+								updatedRowId: rowId,
+								columnName: leafNames[parsed.col],
+								value: newCell?.value ?? null,
+							});
+						}
+						onChangeRef.current?.(allRows, changes);
 					}
 				},
 				onSave: (cells, layout) => {
@@ -229,14 +277,8 @@ export function NativeTable({
 			sheet.renderer.validationWarnings = warnRef.current ?? {};
 			sheet.renderer.render(true);
 			ref.current?.focus();
-			return;
 		}
-
-		// Инкрементальное обновление уже созданной таблицы
-		sheetRef.current.setColumns(columns);
-		sheetRef.current.setData(converted.initialData);
-		sheetRef.current.updateRowIds(converted.rowIds);
-	}, [converted, columns]);
+	}, [data, columnsKey, loading]);
 
 	// Уничтожить таблицу только при размонтировании компонента
 	useEffect(() => {
@@ -256,7 +298,12 @@ export function NativeTable({
 	useEffect(() => {
 		if (!ref.current) return;
 		const ro = new ResizeObserver(() => {
-			requestAnimationFrame(() => sheetRef.current?.renderer?.render(true));
+			requestAnimationFrame(() => {
+				const sheet = sheetRef.current;
+				if (!sheet) return;
+				sheet.renderer.render(true);
+				sheet.refreshOverlay();
+			});
 		});
 		ro.observe(ref.current);
 		return () => ro.disconnect();
@@ -265,7 +312,12 @@ export function NativeTable({
 	// ── Ресайз окна ──────────────────────────────────────────────────────────
 	useEffect(() => {
 		const onResize = () => {
-			requestAnimationFrame(() => sheetRef.current?.renderer?.render(true));
+			requestAnimationFrame(() => {
+				const sheet = sheetRef.current;
+				if (!sheet) return;
+				sheet.renderer.render(true);
+				sheet.refreshOverlay();
+			});
 		};
 		window.addEventListener("resize", onResize);
 		return () => window.removeEventListener("resize", onResize);
@@ -387,6 +439,15 @@ export function NativeTable({
 	}, [hasErrors]);
 
 	// ── Рендер ────────────────────────────────────────────────────────────────
+
+	if ((loading || converted.cols === 0) && !sheetRef.current) {
+		return (
+			<div className={`nt-table-wrapper ${className ?? ""}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "var(--nt-text-muted, #999)", fontSize: "14px", minHeight: "120px" }}>
+				{loading && <div className="nt-loading-spinner" />}
+				<span>{loading ? "Загрузка..." : "Нет данных"}</span>
+			</div>
+		);
+	}
 
 	if (!loading && !effectiveAllowAddRows && converted.rows === 0 && converted.cols === 0) {
 		return (

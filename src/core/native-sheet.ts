@@ -1,19 +1,9 @@
 // ── NativeSheet — основной класс нативной таблицы ───────────────────────────
 //
-// Координирует работу всех подсистем:
-//   - Renderer          — виртуальный рендерер (DOM + скролл)
-//   - SheetModel        — данные (Map<string, Cell>)
-//   - SheetView         — сортировка/фильтрация (displayRow → dataRow)
-//   - Editor            — редактирование ячеек (textarea/select/date/datetime/array/json)
-//   - SelectionOverlay  — рамка выделения + fill-handle
-//   - UndoManager       — история изменений (ячейки, стили, resize, сортировка)
-//   - ContextMenu / SortFilterPopup — всплывающие панели
-//
-// Особенности:
-//   - Все DOM-элементы — нативные (не React)
-//   - Виртуализация: рендерятся только видимые ячейки + буфер
-//   - Лейаут (ширины/высоты/стили) отдаётся через onSave — персистенция на стороне адаптера
-//   - Undo/Redo: все операции в одном стеке, отмена строго в порядке действий
+// Координирует подсистемы: Renderer (виртуальный DOM + скролл), SheetModel
+// (данные), SheetView (сортировка/фильтр), Editor, SelectionOverlay,
+// UndoManager, ContextMenu/SortFilterPopup. DOM нативный, рендерятся только
+// видимые ячейки; лейаут отдаётся через onSave — персистенция на стороне адаптера.
 
 import { UndoManager } from "../services/undo-manager";
 import { ContextMenu, type ContextMenuItem } from "../ui/context-menu";
@@ -27,7 +17,7 @@ import { cellKey, parseCellKey } from "../utils/cell-addr";
 import { formatCellDisplay, getTypeDefault, isBoolean, isReadOnly } from "../utils/column-utils";
 import { flattenColumns } from "../utils/column-tree";
 import { generateTempId } from "../utils/data-convert";
-import { DEFAULT_ROW_HEIGHT, INDEX_HEADER_WIDTH } from "../utils/consts";
+import { DEFAULT_ROW_HEIGHT, INDEX_HEADER_WIDTH, MIN_COL_WIDTH } from "../utils/consts";
 import type {
 	Cell,
 	CellStyle,
@@ -55,9 +45,6 @@ interface Bounds {
 	sc: number;
 	ec: number;
 }
-
-/** Минимальная ширина колонки при ресайзе, px. */
-const MIN_COL_WIDTH = 30;
 
 /** Типы колонок, которые в буфер обмена ОС уходят в человекочитаемом виде. */
 const FORMATTED_TYPES = new Set(["select", "boolean", "date", "datetime"]);
@@ -204,6 +191,9 @@ export class NativeSheet {
 			this.extendRowIds();
 			this.syncView();
 		};
+		// Начальные фантомные строки (ensureRows в конструкторе Renderer) —
+		// они появились до назначения onExpand, поэтому temp-id выдаём сразу
+		this.extendRowIds();
 		this.view.setTotalRows(this.renderer.totalRows);
 		this.renderer.rowMap = this.view.rowMap;
 
@@ -224,6 +214,9 @@ export class NativeSheet {
 			(row, col) => this.renderer.bodyBox(row, col),
 			(row, col, value, direction) => this.commitEdit(row, col, value, direction),
 			() => this.cancelEdit(),
+			// Низ видимой области в координатах cellsLayer — textarea не должна
+			// расти за него (иначе внизу таблицы появляется пустое место)
+			() => this.renderer.bodyDiv.scrollTop + this.renderer.bodyDiv.clientHeight,
 		);
 		this.editor.setView(this.view);
 
@@ -237,7 +230,11 @@ export class NativeSheet {
 			onClear: (col) => this.clearSortFilter(col),
 		}, options.theme);
 
-		this.renderer.setOnScroll(() => this.overlay.update(this.selection));
+		this.renderer.setOnScroll(() => {
+			this.overlay.update(this.selection);
+			// Рамка копирования — в координатах контейнера: обновить при скролле
+			if (this.copyRect) this.overlay.showCopyRange(this.copyRect);
+		});
 
 		// ── События контейнера ────────────────────────────────────────────────
 		container.tabIndex = 0;
@@ -279,10 +276,12 @@ export class NativeSheet {
 		this.view.setModel(this.model);
 		this.editor.setView(this.view);
 
-		// Синхронизировать количество строк с новыми данными
+		// Синхронизировать количество строк с новыми данными.
+		// renderer.totalRows уже включает фантомные строки (ensureRows) — view
+		// должен знать общее число, иначе syncView схлопнет rowMap до одной строки
 		const drc = dataRowCount(data);
 		this.renderer.setDataRows(drc);
-		this.view.resetRows(drc);
+		this.view.resetRows(this.renderer.totalRows, drc);
 		this.undoManager.clear();
 
 		// Пагинация: управляем auto-expand и клипим строки
@@ -300,11 +299,14 @@ export class NativeSheet {
 	setColumns(columns: ColumnDef[]): void {
 		this.options = { ...this.options, columns };
 		this.renderer.setColumns(columns);
+		// Состав/ширины колонок изменились — рамка выделения должна пересчитаться
+		this.refreshOverlay();
 	}
 
 	/** Обновить rowIds без пересоздания таблицы (при смене data). */
 	updateRowIds(rowIds: (string | number)[]): void {
 		this.options = { ...this.options, rowIds };
+		this.renderer.rowIds = rowIds;
 		this.rowIdToIndex.clear();
 		rowIds.forEach((id, idx) => this.rowIdToIndex.set(String(id), idx));
 	}
@@ -320,6 +322,8 @@ export class NativeSheet {
 		}
 		this.renderer.updateContainerSizes();
 		this.renderer.render(true);
+		// Ширины изменились — рамка выделения должна пересчитаться
+		this.refreshOverlay();
 	}
 
 	/** Применить сохранённые стили ячеек (columnName|rowId → стиль) после создания таблицы. */
@@ -328,6 +332,12 @@ export class NativeSheet {
 		// Полный рендер: refreshValues не перерисовывает fixed-слои,
 		// а именно там обычно и находятся стилизованные колонки
 		this.renderer.render(true);
+		this.refreshOverlay();
+	}
+
+	/** Пересчитать оверлей выделения по текущему выделению (после изменения ширин/высот). */
+	refreshOverlay(): void {
+		this.overlay.update(this.selection);
 	}
 
 	hasActiveEditor(): boolean {
@@ -1233,13 +1243,18 @@ export class NativeSheet {
 					this.renderer.setColWidth(col, newWidth);
 				}
 				this.renderer.updateContainerSizes();
-				this.renderer.render(true);
+				// Обновить область выделения сразу после смены ширин —
+				// и до полного ре-рендера (не зависит от него)
 				this.overlay.update(this.selection);
+				this.renderer.render(true);
 			},
 			() => {
 				this.renderer.suspendAutoHeights = false;
 				this.renderer.recalcAutoRowHeights();
 				this.renderer.render(true);
+				// После пересчёта авто-высот область выделения должна
+				// пересчитаться вместе со строками
+				this.overlay.update(this.selection);
 				const newWidth = this.renderer.getColWidth(col);
 				if (newWidth === oldWidth) return;
 				this.undoManager.addRecord({
@@ -1581,5 +1596,5 @@ function dataRowCount(data: Record<string, Cell>): number {
 		const parsed = parseCellKey(key);
 		if (parsed && parsed.row > maxR) maxR = parsed.row;
 	}
-	return Math.max(1, maxR + 1);
+	return maxR + 1;
 }

@@ -4,6 +4,9 @@
 /** Ширина колонки по умолчанию */
 export const DEFAULT_COL_WIDTH = 100;
 
+/** Минимальная ширина колонки */
+export const MIN_COL_WIDTH = 50;
+
 /** Высота строки по умолчанию */
 export const DEFAULT_ROW_HEIGHT = 28;
 

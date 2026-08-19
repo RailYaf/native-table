@@ -71,6 +71,13 @@
 .nt-dark ::-webkit-scrollbar-thumb:hover { background: #777; }
 .nt-dark ::-webkit-scrollbar-corner { background: #2a2a2a; }
 
+/* Скроллбары таблицы: серые, всегда видимые */
+.nt-body::-webkit-scrollbar { width: 8px; height: 8px; }
+.nt-body::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.06); }
+.nt-body::-webkit-scrollbar-thumb { background: #aaa; border-radius: 4px; }
+.nt-body::-webkit-scrollbar-thumb:hover { background: #888; }
+.nt-body::-webkit-scrollbar-corner { background: transparent; }
+
 /* ── Стили ────────────────────────────────────────────────────────────────── */
 
 .nt-container {
@@ -442,7 +449,7 @@
 	pointer-events: none;
 	border: 2px dashed var(--nt-accent);
 	box-sizing: border-box;
-	z-index: 5;
+	z-index: 6;
 }
 
 .nt-fill-handle {
@@ -461,15 +468,14 @@
 	justify-content: center;
 }
 
-/* Disabled row: та же заливка + светлый текст */
+/* Disabled row: только заливка, текст остаётся обычным */
 .nt-cell--disabled {
 	background: var(--nt-bg-disabled);
-	color: var(--nt-text-disabled);
 }
 
-/* ReadOnly колонка: только светлый текст */
+/* ReadOnly колонка: та же заливка, что у заблокированных строк */
 .nt-cell--readonly {
-	color: var(--nt-text-muted);
+	background: var(--nt-bg-disabled);
 }
 
 /* Индикатор ошибки валидации */
@@ -563,7 +569,6 @@
 
 .nt-editor--textarea {
 	resize: none;
-	overflow: hidden;
 	padding: 2px 6px;
 	white-space: pre-wrap;
 	word-break: break-word;

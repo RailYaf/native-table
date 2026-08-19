@@ -12,6 +12,7 @@ import {
 	EXPAND_ROWS_BY,
 	HEADER_ROW_HEIGHT,
 	INDEX_HEADER_WIDTH,
+	MIN_COL_WIDTH,
 	OVERSCAN_ROWS,
 } from "../utils/consts";
 import type { HeaderCell } from "../utils/column-tree";
@@ -276,8 +277,9 @@ export class Renderer {
 		this.onCellMouseOver = (ev: Event) => this.handleCellMouseOver(ev as MouseEvent);
 		this.onCellMouseOut = () => this.hideCellTooltip();
 		this.onCellMouseDown = () => this.hideCellTooltip();
-		this.cellsLayer.addEventListener("mouseover", this.onCellMouseOver);
-		this.cellsLayer.addEventListener("mouseout", this.onCellMouseOut);
+		// Слушатели на контейнере: события fixed-слоёв не всплывают в cellsLayer
+		this.container.addEventListener("mouseover", this.onCellMouseOver);
+		this.container.addEventListener("mouseout", this.onCellMouseOut);
 		this.cellsLayer.addEventListener("mousedown", this.onCellMouseDown);
 
 		this.noDataEl = document.createElement("div");
@@ -328,9 +330,8 @@ export class Renderer {
 	 */
 	setColumns(columns: ColumnDef[]): void {
 		const flat = flattenColumns(columns);
-		// Сохранить вручную изменённые ширины по ИМЕНИ колонки:
-		// setColumns может вызываться с тем же составом колонок (обновление defs),
-		// и ресайз пользователя не должен сбрасываться
+		// Сохранить вручную изменённые ширины по имени колонки: setColumns может
+		// прийти с тем же составом (обновление defs) — ресайз сбрасывать нельзя
 		const oldManualByName = new Map<string, number>();
 		for (let c = 0; c < this.totalCols; c++) {
 			if (!this.manualColWidths.has(c)) continue;
@@ -352,8 +353,8 @@ export class Renderer {
 		this.rebuildColLeftCache();
 		this.computeFixedCols();
 		this.setupFixedLayers();
-		// Восстановить ширины: вручную изменённые (по имени) имеют приоритет над внешним лейаутом —
-		// сохранённый лейаут в columnWidths мог устареть после свежего ресайза
+		// Вручную изменённые ширины (по имени) приоритетнее внешнего лейаута —
+		// сохранённый columnWidths мог устареть после свежего ресайза
 		for (let c = 0; c < this.totalCols; c++) {
 			const name = this.columns[c]?.name;
 			const manual = name ? oldManualByName.get(name) : undefined;
@@ -364,7 +365,7 @@ export class Renderer {
 			}
 			const storedWidth = name ? this.columnWidths[name] : undefined;
 			if (storedWidth !== undefined) {
-				this.colWidths[c] = Math.max(30, storedWidth);
+				this.colWidths[c] = Math.max(MIN_COL_WIDTH, storedWidth);
 				this.manualColWidths.add(c); // сохранённый лейаут — фиксируем
 			}
 		}
@@ -425,8 +426,8 @@ export class Renderer {
 	destroy(): void {
 		this.bodyDiv.removeEventListener("scroll", this.onScrollHandler);
 		this.container.removeEventListener("wheel", this.onContainerWheel);
-		this.cellsLayer.removeEventListener("mouseover", this.onCellMouseOver);
-		this.cellsLayer.removeEventListener("mouseout", this.onCellMouseOut);
+		this.container.removeEventListener("mouseover", this.onCellMouseOver);
+		this.container.removeEventListener("mouseout", this.onCellMouseOut);
 		this.cellsLayer.removeEventListener("mousedown", this.onCellMouseDown);
 		this.hideErrorPopup();
 		this.hideCellTooltip();
@@ -478,9 +479,29 @@ export class Renderer {
 		const t = this.cellTooltip;
 		t.textContent = text;
 		t.style.display = "block";
+
+		// X ячейки в координатах cellsLayer: для прилипших fixed-колонок —
+		// компактная позиция в fixed-слое, иначе — обычная позиция контента
+		const fixedLeftIdx = this.fixedLeftCols.indexOf(col);
+		const fixedRightIdx = this.fixedRightCols.indexOf(col);
+		const nR = this.fixedRightCols.length;
+		const startIdxR = nR - this.currentRightStuckCount;
+		const isStuckLeft = fixedLeftIdx >= 0 && fixedLeftIdx < this.currentStuckCount;
+		const isStuckRight = fixedRightIdx >= 0 && fixedRightIdx >= startIdxR;
+		let cellCenterX: number;
+		if (isStuckLeft) {
+			cellCenterX = this.fixedLeftCompact[fixedLeftIdx] + this.getColWidth(col) / 2 + this.bodyDiv.scrollLeft;
+		} else if (isStuckRight) {
+			const layerW = this.fixedRightTotalW - this.fixedRightCompact[startIdxR];
+			const p = this.fixedRightCompact[fixedRightIdx] - this.fixedRightCompact[startIdxR];
+			cellCenterX = this.bodyDiv.clientWidth - layerW + p + this.getColWidth(col) / 2 - INDEX_HEADER_WIDTH + this.bodyDiv.scrollLeft;
+		} else {
+			cellCenterX = this.colLeft(col) + this.getColWidth(col) / 2;
+		}
+
 		// По центру ячейки, под ней; клампим по границам видимой области
 		const left = Math.min(
-			this.colLeft(col) + this.getColWidth(col) / 2,
+			cellCenterX,
 			this.cellsLayer.clientWidth - t.offsetWidth - 4,
 		);
 		const top = Math.min(
@@ -516,7 +537,7 @@ export class Renderer {
 	/** Установить ширину колонки (мин. 30px). Перестраивает colLeftCache и ширины контейнеров. */
 	setColWidth(col: number, width: number): void {
 		if (col >= this.dataColCount) return;
-		this.colWidths[col] = Math.max(30, width);
+		this.colWidths[col] = Math.max(MIN_COL_WIDTH, width);
 		this.manualColWidths.add(col); // ручная ширина — фиксируем, % больше не применяется
 		this.rebuildColLeftCache();
 		this.headerHeightsDirty = true;
@@ -530,9 +551,9 @@ export class Renderer {
 	resizeColPair(col: number, newWidth: number, neighborCol: number): void {
 		if (col >= this.dataColCount || neighborCol >= this.dataColCount) return;
 		const old = this.colWidths[col] ?? DEFAULT_COL_WIDTH;
-		const next = Math.max(30, newWidth);
+		const next = Math.max(MIN_COL_WIDTH, newWidth);
 		this.colWidths[col] = next;
-		this.colWidths[neighborCol] = Math.max(30, (this.colWidths[neighborCol] ?? DEFAULT_COL_WIDTH) + (old - next));
+		this.colWidths[neighborCol] = Math.max(MIN_COL_WIDTH, (this.colWidths[neighborCol] ?? DEFAULT_COL_WIDTH) + (old - next));
 		this.manualColWidths.add(col);
 		this.manualColWidths.add(neighborCol);
 		this.rebuildColLeftCache();
@@ -1184,7 +1205,7 @@ export class Renderer {
 			if (manualSum <= 0 || manualSum >= available) return;
 			const scale = available / manualSum;
 			for (let c = 0; c < this.dataColCount; c++) {
-				this.colWidths[c] = Math.max(30, Math.round((this.colWidths[c] ?? DEFAULT_COL_WIDTH) * scale));
+				this.colWidths[c] = Math.max(MIN_COL_WIDTH, Math.round((this.colWidths[c] ?? DEFAULT_COL_WIDTH) * scale));
 			}
 			this.rebuildColLeftCache();
 			this.updateContainerSizes();
@@ -1202,7 +1223,7 @@ export class Renderer {
 		// Хватает места — заполняем 100%; не хватает — естественные ширины + скролл
 		const scale = total <= remaining ? remaining / total : 1;
 		for (const [c, w] of desired) {
-			this.colWidths[c] = Math.max(30, Math.round(w * scale));
+			this.colWidths[c] = Math.max(MIN_COL_WIDTH, Math.round(w * scale));
 		}
 		this.rebuildColLeftCache();
 		this.updateContainerSizes();
@@ -1311,9 +1332,8 @@ export class Renderer {
 				const text = cell?.display ?? formatCellDisplay(cell?.value ?? null, colDef);
 				if (!text) continue;
 				const colW = this.colWidths[c] ?? DEFAULT_COL_WIDTH;
-				// Эвристика: короткий текст заведомо в одну строку — замер не нужен.
-				// 8px/символ — консервативно для кириллицы, иначе длинные слова
-				// (например «Северо-Западный») ошибочно пропускаются и текст обрезается.
+				// Эвристика: короткий текст заведомо в одну строку — замер не нужен
+				// (8px/символ — консервативно для кириллицы)
 				const approxChars = Math.floor((colW - 16) / 8) - 1;
 				if (String(text).length <= approxChars) continue;
 				const raw = this.measureTextPx(String(text), colW);
@@ -1715,9 +1735,7 @@ export class Renderer {
 					const nR = this.fixedRightCols.length;
 					const startIdxR = nR - this.currentRightStuckCount;
 					if (fixedRightIdx >= 0 && fixedRightIdx >= startIdxR && !cellInfo.phantom) {
-						// Fixed-right прилипшая: позиция в fixed-right слое.
-						// bodyDiv.clientWidth = offsetWidth - scrollbarW, что соответствует
-						// правому краю слоя (layer right = container - scrollbarW = bodyDiv.clientWidth).
+						// Прилипшая fixed-right: позиция в fixed-right слое (layer right = bodyDiv.clientWidth)
 						const layerW = this.fixedRightTotalW - this.fixedRightCompact[startIdxR];
 						const p = this.fixedRightCompact[fixedRightIdx] - this.fixedRightCompact[startIdxR];
 						el.style.left = `${this.bodyDiv.clientWidth - layerW + p}px`;

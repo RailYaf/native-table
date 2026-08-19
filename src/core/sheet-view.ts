@@ -49,10 +49,11 @@ export class SheetView {
 		this.rebuild();
 	}
 
-	/** Переустановить строки при полной замене данных: все строки — данные. */
-	resetRows(n: number): void {
-		this._totalRows = n;
-		this._dataRowCount = n;
+	/** Переустановить строки при полной замене данных.
+	 * total — общее число строк (включая фантомные), dataCount — граница реальных данных. */
+	resetRows(total: number, dataCount?: number): void {
+		this._totalRows = total;
+		this._dataRowCount = dataCount ?? total;
 		this._freshRows.clear();
 		this.rebuild();
 	}

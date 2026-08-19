@@ -14,7 +14,10 @@ export function formatCellDisplay(
 	value: ScalarCellValue,
 	colDef?: ColumnDef,
 ): string {
-	if (value === null || value === undefined) return colDef?.nullable ? "Не определено" : "";
+	// «Не определено» — только для nullable boolean (три состояния), иначе пусто
+	if (value === null || value === undefined) {
+		return colDef?.nullable && (colDef?.type ?? "text") === "boolean" ? "Не определено" : "";
+	}
 
 	const type = colDef?.type ?? "text";
 
@@ -41,7 +44,9 @@ export function formatCellDisplay(
 
 		case "date": {
 			if (typeof value !== "string" || !value) return "";
-			const parts = value.split("-");
+			// Бэк может прислать полный ISO (2026-06-10T00:00:00) — берём только дату
+			const datePart = value.slice(0, 10);
+			const parts = datePart.split("-");
 			if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
 			return value;
 		}
@@ -118,7 +123,7 @@ export function isBoolean(colDef?: ColumnDef): boolean {
 export function getTypeDefault(colDef?: ColumnDef): ScalarCellValue {
 	const type = colDef?.type ?? "text";
 	if (type === "boolean") return false;
-	if (type === "number") return 0;
+	if (type === "number") return null;
 	if (type === "array") return [];
 	if (type === "json") return null;
 	return "";
