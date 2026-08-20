@@ -636,7 +636,8 @@
 	border-bottom: none;
 }
 
-.nt-select-dropdown-item:hover {
+.nt-select-dropdown-item:hover,
+.nt-select-dropdown-item--active {
 	background: var(--nt-bg-phantom);
 }
 

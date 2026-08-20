@@ -17,6 +17,8 @@ export class Editor {
 	private activeEl: HTMLInputElement | HTMLTextAreaElement | HTMLDivElement | null = null;
 	private dropdownEl: HTMLDivElement | null = null;
 	private disposeDropdown: (() => void) | null = null;
+	private selectNavHandler: ((e: KeyboardEvent) => boolean) | null = null;
+	private selectTypeHandler: ((e: KeyboardEvent) => boolean) | null = null;
 	private mode: "text" | "select" | "array" | "date" = "text";
 	private active = false;
 
@@ -120,7 +122,7 @@ export class Editor {
 		noMatches.textContent = "Ничего не найдено";
 		noMatches.style.display = "none";
 
-		const optionEls: Array<{ el: HTMLDivElement; label: string }> = [];
+		const optionEls: Array<{ el: HTMLDivElement; label: string; value: string }> = [];
 		for (const opt of colDef.options ?? []) {
 			const item = document.createElement("div");
 			item.className = "nt-select-dropdown-item";
@@ -128,8 +130,62 @@ export class Editor {
 			item.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); });
 			item.addEventListener("click", () => { this.commitSelect(String(opt.value)); });
 			if (String(opt.value) === currentValue) item.classList.add("nt-select-dropdown-item--selected");
-			optionEls.push({ el: item, label: opt.label.toLowerCase() });
+			optionEls.push({ el: item, label: opt.label.toLowerCase(), value: String(opt.value) });
 		}
+
+		// Навигация по списку стрелками: Enter — выбрать подсвеченный пункт
+		const visibleEls = () => optionEls.filter((o) => o.el.style.display !== "none");
+		const indexByValue = optionEls.findIndex((o) => o.value === currentValue);
+		let activeIdx = indexByValue >= 0 ? indexByValue : 0;
+		const setActive = (idx: number) => {
+			const vis = visibleEls();
+			if (vis.length === 0) return;
+			const norm = ((idx % vis.length) + vis.length) % vis.length;
+			for (const { el } of optionEls) el.classList.remove("nt-select-dropdown-item--active");
+			activeIdx = norm;
+			vis[norm].el.classList.add("nt-select-dropdown-item--active");
+			// Прокрутка списка: держим подсвеченный пункт с 1-2 пунктами выше
+			const list = vis[norm].el.parentElement as HTMLElement | null;
+			if (list) {
+				const anchorIdx = Math.max(0, optionEls.indexOf(vis[norm]) - 2);
+				list.scrollTop = Math.max(0, optionEls[anchorIdx].el.offsetTop - list.offsetTop);
+			}
+		};
+		// Один обработчик на два источника: клавиши на инпуте поиска и
+		// проброс из NativeSheet (если фокус остался на контейнере таблицы)
+		this.selectNavHandler = (e) => {
+			if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter") return false;
+			e.preventDefault();
+			const vis = visibleEls();
+			if (vis.length === 0) return true;
+			if (e.key === "Enter") {
+				const cur = vis[activeIdx < 0 ? 0 : activeIdx];
+				if (cur) this.commitSelect(cur.value);
+				return true;
+			}
+			const delta = e.key === "ArrowDown" ? 1 : -1;
+			setActive(activeIdx + delta);
+			return true;
+		};
+		// Печатные символы при фокусе на контейнере — вводим прямо в поиск
+		this.selectTypeHandler = (e) => {
+			if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return false;
+			searchInput.value = e.key;
+			searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+			searchInput.focus();
+			return true;
+		};
+		searchInput.addEventListener("keydown", (e) => {
+			const ev = e as KeyboardEvent;
+			if (this.selectNavHandler?.(ev)) {
+				ev.stopPropagation();
+			} else if (ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+				// Печатные символы вводит сам инпут — не пускаем событие к NativeSheet
+				ev.stopPropagation();
+			}
+		});
+
+
 
 		// Фильтрация по подстроке (регистронезависимо).
 		// Линия-разделитель убирается у последнего ВИДИМОГО пункта (скрытые
@@ -138,7 +194,9 @@ export class Editor {
 			const q = searchInput.value.trim().toLowerCase();
 			let visible = 0;
 			let lastVisibleEl: HTMLDivElement | null = null;
+			activeIdx = -1;
 			for (const { el, label } of optionEls) {
+				el.classList.remove("nt-select-dropdown-item--active");
 				const show = q === "" || label.includes(q);
 				el.style.display = show ? "" : "none";
 				el.classList.remove("nt-select-dropdown-item--no-border");
@@ -170,6 +228,17 @@ export class Editor {
 			: `${box.top - ddH}px`;
 		dropdown.style.visibility = "";
 
+		// Начальная позиция — текущий выбранный пункт: прокручиваем к нему
+		// (с 1-2 пунктами выше), но не подсвечиваем (он уже зелёный как «выбранный»)
+		activeIdx = indexByValue >= 0 ? indexByValue : 0;
+		if (indexByValue >= 0) {
+			const list = optionEls[indexByValue].el.parentElement as HTMLElement | null;
+			if (list) {
+				const anchorIdx = Math.max(0, indexByValue - 2);
+				list.scrollTop = Math.max(0, optionEls[anchorIdx].el.offsetTop - list.offsetTop);
+			}
+		}
+
 		this.active = true;
 		this.mode = "select";
 		this.activeEl.classList.add("nt-editor--active");
@@ -188,6 +257,16 @@ export class Editor {
 		const col = this.col;
 		this.cleanup();
 		this.onCommit(row, col, value, "none");
+	}
+
+	/**
+	 * Навигация по открытому select-дропдауну стрелками/Enter.
+	 * Вызывается из NativeSheet, когда фокус остался на контейнере таблицы.
+	 * Возвращает true, если клавиша обработана.
+	 */
+	handleDropdownKey(e: KeyboardEvent): boolean {
+		if (this.selectNavHandler?.(e)) return true;
+		return this.selectTypeHandler?.(e) ?? false;
 	}
 
 	// ── Array-редактор ────────────────────────────────────────────────────────
@@ -586,6 +665,8 @@ export class Editor {
 	/** Удалить все DOM-элементы редактора и снять все подписки. */
 	private cleanup(): void {
 		this.active = false;
+		this.selectNavHandler = null;
+		this.selectTypeHandler = null;
 		this.disposeDropdown?.();
 		this.disposeDropdown = null;
 		this.arrayRows = [];

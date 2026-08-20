@@ -103,7 +103,17 @@ export function handleKeyboard(e: KeyboardEvent, args: KeyboardHandlerArgs): voi
 		case "ArrowUp":    next = { row: cursor.row - 1, col: cursor.col }; break;
 		case "ArrowDown":  next = { row: cursor.row + 1, col: cursor.col }; break;
 		case "ArrowLeft":  next = { row: cursor.row, col: cursor.col - 1 }; break;
-		case "ArrowRight": next = { row: cursor.row, col: cursor.col + 1 }; break;
+		case "ArrowRight": {
+			let row = cursor.row;
+			let col = cursor.col + 1;
+			if (col > maxC) {
+				// Последний столбец — переход на новую строку (первый столбец)
+				col = 0;
+				row = Math.min(row + 1, maxR);
+			}
+			next = { row, col };
+			break;
+		}
 		case "PageUp":     next = { row: cursor.row - (args.pageSize ?? 20), col: cursor.col }; break;
 		case "PageDown":   next = { row: cursor.row + (args.pageSize ?? 20), col: cursor.col }; break;
 		case "Enter":      next = { row: cursor.row + 1, col: cursor.col }; break;

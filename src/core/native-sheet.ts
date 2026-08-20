@@ -721,7 +721,11 @@ export class NativeSheet {
 
 	/** Обработчик клавиатуры: делегирует нажатия в handleKeyboard (навигация, ввод, копирование, сохранение и т.д.). */
 	private onKeyDown(e: KeyboardEvent): void {
-		if (this.editor.isActive()) return;
+		if (this.editor.isActive()) {
+			// Стрелки/Enter в открытом select-дропдауне — навигация по пунктам
+			if (this.editor.handleDropdownKey(e)) return;
+			return;
+		}
 		handleKeyboard(e, {
 			selection: this.selection,
 			totalRows: this.renderer.totalRows,
@@ -809,7 +813,15 @@ export class NativeSheet {
 		let nextRow = row;
 		let nextCol = col;
 		if (direction === "enter") nextRow = Math.min(row + 1, this.maxRow());
-		else if (direction === "tab") nextCol = Math.min(col + 1, this.maxCol());
+		else if (direction === "tab") {
+			if (col >= this.maxCol()) {
+				// Последний столбец — переход на новую строку (первый столбец)
+				nextRow = Math.min(row + 1, this.maxRow());
+				nextCol = 0;
+			} else {
+				nextCol = col + 1;
+			}
+		}
 		else if (direction === "shift-tab") nextCol = Math.max(col - 1, 0);
 
 		this.setSelection({ start: { row: nextRow, col: nextCol }, end: { row: nextRow, col: nextCol } });
