@@ -1522,10 +1522,20 @@ export class Renderer {
 			popup.append(item);
 		}
 		const rect = anchor.getBoundingClientRect();
-		popup.style.left = `${rect.right + 4}px`;
-		popup.style.top = `${rect.top}px`;
 		document.body.append(popup);
 		this.errorPopup = popup;
+
+		// Кламп по видимой области: попап не должен выходить за края окна
+		const pw = popup.offsetWidth;
+		const ph = popup.offsetHeight;
+		const maxLeft = window.innerWidth - pw - 8;
+		if (rect.right + 4 > maxLeft) {
+			// Не помещается справа — показать слева от маркера
+			popup.style.left = `${Math.max(8, rect.left - pw - 4)}px`;
+		} else {
+			popup.style.left = `${rect.right + 4}px`;
+		}
+		popup.style.top = `${Math.min(Math.max(8, rect.top), window.innerHeight - ph - 8)}px`;
 	}
 
 	/** Скрыть попап ошибки/предупреждения. */
