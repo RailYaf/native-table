@@ -88,7 +88,7 @@ export class NativeSheet {
 	private toolbarEl: HTMLElement | null = null;
 
 	/** Строки, запрещённые к редактированию */
-	disabledRows: Set<number>;
+	disabledRows: Set<string | number>;
 
 	/** Разрешено ли изменение ширины столбцов перетаскиванием */
 	private columnResizable: boolean;
@@ -473,7 +473,17 @@ export class NativeSheet {
 		return this.view.dataRow(displayRow);
 	}
 
+	/** id записи для data-строки (из rowIds или фолбэк dataRow + 1). */
+	private rowIdAt(dataRow: number): string | number {
+		return this.renderer.rowIds?.[dataRow] ?? dataRow + 1;
+	}
+
 	private setSelectionNoScroll(rect: SelectionRect): void {
+		// Таблица без данных и без добавления строк — выделение не ставим
+		if (!this.renderer.allowAddRows && this.renderer.initialRowCount === 0) {
+			this.selection = { start: null, end: null };
+			return;
+		}
 		this.selection = rect;
 		this.overlay.update(rect);
 		this.renderer.selectedRect = rect;
@@ -482,6 +492,8 @@ export class NativeSheet {
 	}
 
 	private setSelection(rect: SelectionRect): void {
+		// Таблица без данных и без добавления строк — выделение не ставим
+		if (!this.renderer.allowAddRows && this.renderer.initialRowCount === 0) return;
 		if (rect.end) this.renderer.scrollToCell(rect.end.row, rect.end.col);
 		this.setSelectionNoScroll(rect);
 	}
@@ -660,6 +672,8 @@ export class NativeSheet {
 	/** Обработчик правого клика: собирает и показывает контекстное меню (копировать/вставить/строки/очистить). */
 	private onContextMenu(e: MouseEvent): void {
 		if (this.editor.isActive()) return;
+		// Таблица без данных и без добавления строк — контекстное меню не показываем
+		if (!this.renderer.allowAddRows && this.renderer.initialRowCount === 0) return;
 		e.preventDefault();
 		if (isInertTarget(e.target as HTMLElement)) return;
 
@@ -670,7 +684,8 @@ export class NativeSheet {
 		let allCellsProtected = true;
 		let anyRowDisabled = false;
 		for (let r = b.sr; r <= b.er; r++) {
-			const rowDisabled = this.disabledRows.has(this.toDataRow(r));
+			const dr = this.toDataRow(r);
+			const rowDisabled = this.disabledRows.has(this.rowIdAt(dr));
 			if (rowDisabled) anyRowDisabled = true;
 			for (let c = b.sc; c <= b.ec; c++) {
 				if (!rowDisabled && !isReadOnly(this.renderer.getColumn(c))) allCellsProtected = false;
@@ -748,7 +763,7 @@ export class NativeSheet {
 	private canEdit(displayRow: number, col: number): boolean {
 		if (this.renderer.readOnly) return false;
 		if (isReadOnly(this.renderer.getColumn(col))) return false;
-		return !this.disabledRows.has(this.toDataRow(displayRow));
+		return !this.disabledRows.has(this.rowIdAt(this.toDataRow(displayRow)));
 	}
 
 	/**
@@ -948,7 +963,7 @@ export class NativeSheet {
 
 		for (let r = b.sr; r <= lastRow; r++) {
 			const dr = this.toDataRow(r);
-			if (this.disabledRows.has(dr)) continue;
+			if (this.disabledRows.has(this.rowIdAt(dr))) continue;
 			for (let c = b.sc; c <= lastCol; c++) {
 				if (this.renderer.getColumn(c)?.readOnly) continue;
 
@@ -977,7 +992,7 @@ export class NativeSheet {
 		const changed: CellChanges = {};
 		for (let r = b.sr; r <= b.er; r++) {
 			const dr = this.toDataRow(r);
-			if (this.disabledRows.has(dr)) continue;
+			if (this.disabledRows.has(this.rowIdAt(dr))) continue;
 			for (let c = b.sc; c <= b.ec; c++) {
 				const colDef = this.renderer.getColumn(c);
 				if (colDef?.readOnly) continue;
@@ -1045,7 +1060,7 @@ export class NativeSheet {
 		const dataRows = new Set<number>();
 		for (let r = b.sr; r <= b.er; r++) {
 			const dr = this.toDataRow(r);
-			if (this.disabledRows.has(dr)) return; // заблокированные строки удалять нельзя
+			if (this.disabledRows.has(this.rowIdAt(dr))) return; // заблокированные строки удалять нельзя
 			dataRows.add(dr);
 		}
 
@@ -1142,7 +1157,7 @@ export class NativeSheet {
 			for (let r = top; r <= bottom; r++) {
 				if (r >= src.sr && r <= src.er && c >= src.sc && c <= src.ec) continue;
 				const dr = this.toDataRow(r);
-				if (this.disabledRows.has(dr)) continue;
+				if (this.disabledRows.has(this.rowIdAt(dr))) continue;
 
 				const sample = isSeries && stepPerRow !== 0
 					? srcCells[0]

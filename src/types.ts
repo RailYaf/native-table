@@ -21,7 +21,7 @@ export interface NativeTableProps {
 	onSave?: (allRows: Record<string, unknown>[], changes: ChangeItem[], layout?: LayoutData) => void;
 	/** Показать спиннер загрузки */
 	loading?: boolean;
-	/** Индексы строк, запрещённых к редактированию */
+	/** id записей, запрещённых к редактированию */
 	disabledRows?: number[];
 	/** Ошибки валидации: rowId + columnName + message */
 	validationErrors?: ValidationError[];

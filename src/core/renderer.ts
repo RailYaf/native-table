@@ -97,8 +97,8 @@ export class Renderer {
 	headerConfig?: import("../utils/types").HeaderConfig;
 	/** Настройки ячеек */
 	cellConfig?: import("../utils/types").CellConfig;
-	/** Индексы заблокированных строк */
-	disabledRows: Set<number> = new Set();
+	/** id записей, запрещённых к редактированию */
+	disabledRows: Set<string | number> = new Set();
 	/** Ошибки валидации: cellKey → список сообщений */
 	validationErrors: Record<string, string[]> = {};
 	/** Предупреждения валидации: cellKey → список сообщений */
@@ -382,6 +382,11 @@ export class Renderer {
 	/** Перевести display-строку в data-строку через rowMap (сортировка/фильтр). */
 	private dataRow(displayRow: number): number {
 		return this.rowMap[displayRow] ?? displayRow;
+	}
+
+	/** id записи для data-строки (из rowIds или фолбэк dataRow + 1). */
+	private rowIdAt(dataRow: number): string | number {
+		return this.rowIds?.[dataRow] ?? dataRow + 1;
 	}
 
 	/** Количество строк после фильтрации. */
@@ -907,7 +912,7 @@ export class Renderer {
 			p.row = row;
 			p.el.style.top = `${this.rowTop(row)}px`;
 			p.el.style.height = `${this.getRowHeight(row)}px`;
-			p.el.classList.toggle("nt-row--disabled", this.disabledRows.has(this.dataRow(row)));
+			p.el.classList.toggle("nt-row--disabled", this.disabledRows.has(this.rowIdAt(this.dataRow(row))));
 			p.el.classList.toggle("nt-row--striped", this.striped && row % 2 === 0);
 
 			while (p.cells.length < cols.length) {
@@ -931,7 +936,7 @@ export class Renderer {
 				el.dataset.row = String(row);
 				el.classList.toggle("nt-cell--fixed-left", side === "left");
 				el.classList.toggle("nt-cell--fixed-right", side === "right");
-				el.classList.toggle("nt-cell--disabled", this.disabledRows.has(dr));
+				el.classList.toggle("nt-cell--disabled", this.disabledRows.has(this.rowIdAt(dr)));
 				el.classList.toggle("nt-cell--readonly", !this.readOnly && !!colDef?.readOnly);
 				el.style.cursor = this.readOnly ? "default" : "";
 				renderCellContent(el, this.model.get(dr, c), colDef, this.cellConfig);
@@ -1556,7 +1561,7 @@ export class Renderer {
 			pool.row = row;
 			pool.el.style.top = `${this.rowTop(row)}px`;
 			pool.el.style.height = `${this.getRowHeight(row)}px`;
-			pool.el.classList.toggle("nt-row--disabled", this.disabledRows.has(this.dataRow(row)));
+			pool.el.classList.toggle("nt-row--disabled", this.disabledRows.has(this.rowIdAt(this.dataRow(row))));
 			pool.el.classList.toggle("nt-row--striped", this.striped && row % 2 === 0);
 			this.renderRowContents(pool, row, sc, ec);
 		}
@@ -1592,7 +1597,7 @@ export class Renderer {
 			el.dataset.row = String(row);
 			el.style.zIndex = "";
 			el.classList.remove("nt-cell--fixed-left", "nt-cell--fixed-right");
-			const isDisabledRow = this.disabledRows.has(this.dataRow(row));
+			const isDisabledRow = this.disabledRows.has(this.rowIdAt(this.dataRow(row)));
 			const isReadOnlyCol = !this.readOnly && !!colDef?.readOnly;
 			el.classList.toggle("nt-cell--disabled", isDisabledRow);
 			el.classList.toggle("nt-cell--readonly", isReadOnlyCol);

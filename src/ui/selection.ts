@@ -23,11 +23,13 @@ export class SelectionOverlay {
 	) {
 		this.range = document.createElement("div");
 		this.range.className = "nt-range";
+		this.range.style.display = "none";
 		this.copyRange = document.createElement("div");
 		this.copyRange.className = "nt-copy-range";
 		this.copyRange.style.display = "none";
 		this.fillHandle = document.createElement("div");
 		this.fillHandle.className = "nt-fill-handle";
+		this.fillHandle.style.display = "none";
 		cellsLayer.append(this.range);
 		// Copy-range и fill-handle живут в container (не в bodyDiv), чтобы их
 		// z-index был в том же stacking context, что и fixed-слои (z-index 5)
