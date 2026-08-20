@@ -300,8 +300,13 @@ export class Renderer {
 		// Wheel events на fixed-слоях (вне bodyDiv) пробрасываем в bodyDiv
 		this.onContainerWheel = (e: WheelEvent) => {
 			if (!this.bodyDiv.contains(e.target as Node)) {
-				this.bodyDiv.scrollLeft += e.deltaX;
-				this.bodyDiv.scrollTop += e.deltaY;
+				if (e.shiftKey && e.deltaY !== 0) {
+					// Shift + колесо над fixed-колонкой — горизонтальный скролл
+					this.bodyDiv.scrollLeft += e.deltaY;
+				} else {
+					this.bodyDiv.scrollLeft += e.deltaX;
+					this.bodyDiv.scrollTop += e.deltaY;
+				}
 			}
 		};
 		this.container.addEventListener("wheel", this.onContainerWheel, { passive: true });
