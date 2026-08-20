@@ -541,6 +541,8 @@ export class Renderer {
 		this.manualColWidths.add(col); // ручная ширина — фиксируем, % больше не применяется
 		this.rebuildColLeftCache();
 		this.headerHeightsDirty = true;
+		// Состав ручных ширин изменился — пересчитать заполнение вьюпорта
+		this.lastViewportW = -1;
 	}
 
 	/**
@@ -558,6 +560,8 @@ export class Renderer {
 		this.manualColWidths.add(neighborCol);
 		this.rebuildColLeftCache();
 		this.headerHeightsDirty = true;
+		// Состав ручных ширин изменился — пересчитать заполнение вьюпорта
+		this.lastViewportW = -1;
 	}
 
 	/** Ширина колонки в px (дефолт DEFAULT_COL_WIDTH). */
