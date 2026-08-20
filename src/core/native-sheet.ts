@@ -78,6 +78,8 @@ export class NativeSheet {
 
 	private options: NativeSheetOptions;
 	private destroyed = false;
+	/** Фокус был в нашей таблице (для paste на уровне документа) */
+	private lastFocused = false;
 
 	/** Отписки, которые нужно выполнить в destroy() */
 	private disposers: Array<() => void> = [];
@@ -243,7 +245,15 @@ export class NativeSheet {
 		this.listen(container, "click", (e) => this.onClick(e as MouseEvent));
 		this.listen(container, "contextmenu", (e) => this.onContextMenu(e as MouseEvent));
 		this.listen(container, "keydown", (e) => this.onKeyDown(e as KeyboardEvent));
-		this.listen(container, "paste", (e) => this.onPaste(e as ClipboardEvent));
+		// Paste приходит на сфокусированный элемент — ловим на документе,
+		// чтобы вставка работала, даже если фокус «уехал» с контейнера
+		this.listen(container, "focusin", () => { this.lastFocused = true; });
+		this.listen(document, "focusin", (e) => {
+			if (e.target !== this.container && !this.container.contains(e.target as Node)) {
+				this.lastFocused = false;
+			}
+		});
+		this.listen(document, "paste", (e) => this.onPaste(e as ClipboardEvent));
 
 		// Тулбар ищем внутри своей .nt-table-wrapper, а не по всему документу:
 		// иначе две таблицы на странице управляли бы кнопками друг друга
@@ -916,6 +926,7 @@ export class NativeSheet {
 	/** Вставка из внешнего буфера */
 	private onPaste(e: ClipboardEvent): void {
 		if (this.editor.isActive() || this.renderer.readOnly) return;
+		if (!this.lastFocused) return;
 		// Если уже есть внутренний буфер (Ctrl+C внутри таблицы) — используем его
 		if (this.clipboard) { this.paste(); return; }
 		const text = e.clipboardData?.getData("text/plain");
@@ -1554,10 +1565,10 @@ export class NativeSheet {
 	// ──────────────────────────────────────────────────────────────────────────
 
 	/** Подписаться на событие с автоматической отпиской в destroy(). */
-	private listen<K extends keyof HTMLElementEventMap>(
-		el: HTMLElement,
+	private listen<K extends keyof DocumentEventMap>(
+		el: HTMLElement | Document,
 		type: K,
-		handler: (_ev: HTMLElementEventMap[K]) => void,
+		handler: (_ev: DocumentEventMap[K]) => void,
 	): void {
 		el.addEventListener(type, handler as EventListener);
 		this.disposers.push(() => el.removeEventListener(type, handler as EventListener));
