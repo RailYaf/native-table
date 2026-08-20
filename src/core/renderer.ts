@@ -1361,8 +1361,8 @@ export class Renderer {
 	}
 
 	/** Точная высота текста в px при заданной ширине колонки (условия как в ячейке). */
-	private measureTextPx(text: string, colWidth: number): number {
-		const cacheKey = `${Math.round(colWidth)}|${text}`;
+	private measureTextPx(text: string, colWidth: number, multiline = false): number {
+		const cacheKey = `${multiline ? "m" : "s"}:${Math.round(colWidth)}|${text}`;
 		const cached = this.measureCache.get(cacheKey);
 		if (cached !== undefined) return cached;
 		if (!this.measureEl) {
@@ -1372,7 +1372,7 @@ export class Renderer {
 			this.measureEl.style.visibility = "hidden";
 			this.container.append(this.measureEl);
 		}
-		if (this.cellConfig?.ellipsis) {
+		if (this.cellConfig?.ellipsis && !multiline) {
 			this.measureEl.style.display = "-webkit-box";
 			this.measureEl.style.webkitBoxOrient = "vertical";
 			this.measureEl.style.webkitLineClamp = "unset";
@@ -1829,9 +1829,8 @@ export class Renderer {
 					const spanW = this.colWidths.slice(h.col, h.col + h.colSpan).reduce((a, b) => a + b, 0);
 					const iconW = (h.colSpan === 1 && !this.columns[h.col]?.children) ? 18 : 0;
 					const availableW = Math.max(40, spanW - 20 - iconW);
-					const charsPerLine = Math.max(1, Math.floor(availableW / 7));
-					const lines = Math.ceil((h.label || "").length / charsPerLine);
-					const cellH = Math.max(0, lines) * 18 + 16;
+					// Реальная высота текста с переносом (детерминированно, с кешем)
+					const cellH = this.measureTextPx(h.label || "", availableW, true) + 16;
 					if (cellH > maxH) maxH = cellH;
 				}
 				this.cachedHeaderMaxH.push(maxH);
