@@ -425,18 +425,17 @@ export class NativeSheet {
 	}
 
 	/**
-	 * Сохранить состояние: данные и лейаут (ширины/высоты/стили) → через
-	 * onChange/onSave (персистенция — на стороне адаптера), очистить историю undo.
-	 * В readOnly-режиме данные не меняются, но лейаут всё равно сохраняется.
+	 * Сохранить состояние: данные → через onSave (персистенция — на стороне
+	 * адаптера), очистить историю undo. Лейаут сохраняется отдельно —
+	 * через onLayoutChange при изменении ширин колонок.
 	 */
 	save(): void {
 		if (Object.keys(this.renderer.validationErrors).length > 0) return;
-		const layout = this.collectLayout();
 		const cells = this.model.getAll();
 		if (!this.renderer.readOnly) {
 			this.options.onChange?.(cells, {});
 		}
-		this.options.onSave?.(cells, layout);
+		this.options.onSave?.(cells);
 		this.undoManager.clear();
 		this.updateToolbar();
 	}
@@ -1230,7 +1229,7 @@ export class NativeSheet {
 	 * при сужении ТОЛЬКО когда колонки занимают 100% ширины вьюпорта (без
 	 * горизонтального скролла); если колонок много и они не помещаются — сужение
 	 * просто уменьшает ширину колонки, сосед не трогается.
-	 * По окончании — запись ширин в историю (undo/redo).
+	 * По окончании — onLayoutChange с новыми ширинами (в undo не попадает).
 	 */
 	private startColResize(col: number, startX: number): void {
 		const oldWidth = this.renderer.getColWidth(col);
@@ -1296,7 +1295,7 @@ export class NativeSheet {
 
 	/**
 	 * Применить сортировку/фильтр колонки из попапа: в серверном режиме шлёт
-	 * снапшот наверх, в клиентском — обновляет представление с записью в историю.
+	 * снапшот наверх, в клиентском — обновляет представление (в undo не попадает).
 	 */
 	private applySortFilter(col: number, state: SortFilterState): void {
 		if (this.options.serverSide) {
@@ -1528,7 +1527,7 @@ export class NativeSheet {
 		}
 	}
 
-	/** Собрать данные лейаута (ширины, стили) для сохранения. */
+	/** Собрать данные лейаута (ширины, стили) для onLayoutChange. */
 	private collectLayout(): LayoutData {
 		const widths: Record<string, number> = {};
 		const limit = this.renderer.dataColCount;

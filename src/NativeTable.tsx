@@ -20,6 +20,7 @@ export function NativeTable({
 	data = [],
 	columns,
 	onChange,
+	onLayoutChange,
 	onSave,
 	loading = false,
 	disabledRows = [],
@@ -53,6 +54,8 @@ export function NativeTable({
 
 	const onChangeRef = useRef(onChange);
 	onChangeRef.current = onChange;
+	const onLayoutChangeRef = useRef(onLayoutChange);
+	onLayoutChangeRef.current = onLayoutChange;
 	const onSaveRef = useRef(onSave);
 	onSaveRef.current = onSave;
 	const leafNamesRef = useRef(converted.leafNames);
@@ -225,7 +228,11 @@ export function NativeTable({
 						onChangeRef.current?.(allRows, changes);
 					}
 				},
-				onSave: (cells, layout) => {
+				onLayoutChange: (layout) => {
+					// Изменение ширин колонок — отдельный колбэк лейаута
+					onLayoutChangeRef.current?.(layout);
+				},
+				onSave: (cells) => {
 					const leafNames = leafNamesRef.current;
 					const rowIds = rowIdsRef.current;
 					const rows = cellsToSaveRows(cells, leafNames, rowIds);
@@ -269,7 +276,7 @@ export function NativeTable({
 						}
 					}
 
-					onSaveRef.current?.(allRows, changes, layout);
+					onSaveRef.current?.(allRows, changes);
 				},
 			});
 			sheetRef.current = sheet;
@@ -476,9 +483,9 @@ export function NativeTable({
 				</div>
 			)}
 			<div className="nt-toolbar" onClick={onToolbar}>
-				{show("save") && <button className="nt-tb-btn nt-tb-save" data-action="save" disabled={hasErrors} data-tooltip="Сохранить (Ctrl+S)"><SaveIcon size={iconSize} /><span className="nt-tb-dot" /></button>}
-				{show("undo") && <button className="nt-tb-btn" data-action="undo" data-tooltip="Отменить (Ctrl+Z)"><UndoIcon size={iconSize} /></button>}
-				{show("redo") && <button className="nt-tb-btn" data-action="redo" data-tooltip="Вернуть (Ctrl+Y)"><RedoIcon size={iconSize} /></button>}
+				{!readOnly && show("save") && <button className="nt-tb-btn nt-tb-save" data-action="save" disabled={hasErrors} data-tooltip="Сохранить (Ctrl+S)"><SaveIcon size={iconSize} /><span className="nt-tb-dot" /></button>}
+				{!readOnly && show("undo") && <button className="nt-tb-btn" data-action="undo" data-tooltip="Отменить (Ctrl+Z)"><UndoIcon size={iconSize} /></button>}
+				{!readOnly && show("redo") && <button className="nt-tb-btn" data-action="redo" data-tooltip="Вернуть (Ctrl+Y)"><RedoIcon size={iconSize} /></button>}
 				{show("background") && <label className="nt-tb-btn nt-tb-color-btn" data-tooltip="Цвет заливки">
 					<PaintBucketIcon size={iconSize} />
 					<span className="nt-tb-color-bar" style={{backgroundColor: lastBg}} />

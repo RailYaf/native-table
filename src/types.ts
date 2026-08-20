@@ -13,12 +13,14 @@ export interface NativeTableProps {
 	rowKey?: string;
 	/** Вызывается при любом изменении данных */
 	onChange?: (allRows: Record<string, unknown>[], changes: ChangeItem[]) => void;
+	/** Вызывается при изменении ширины колонок (ресайз) — лейаут для персистенции. */
+	onLayoutChange?: (layoutData: LayoutData) => void;
 	/**
 	 * Вызывается при сохранении (Ctrl+S / кнопка):
 	 * allRows — все строки таблицы, changes — гранулярные изменения
-	 * (created/updated ячейки, deleted строки), layout — ширины/стили.
+	 * (created/updated ячейки, deleted строки).
 	 */
-	onSave?: (allRows: Record<string, unknown>[], changes: ChangeItem[], layout?: LayoutData) => void;
+	onSave?: (allRows: Record<string, unknown>[], changes: ChangeItem[]) => void;
 	/** Показать спиннер загрузки */
 	loading?: boolean;
 	/** id записей, запрещённых к редактированию */
