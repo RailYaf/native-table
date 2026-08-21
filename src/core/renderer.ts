@@ -1939,8 +1939,7 @@ function renderCellContent(
 	cellConfig?: import("../utils/types").CellConfig,
 	editingCell?: { row: number; col: number } | null,
 ): void {
-	// Применить стили ячейки: пользовательский (тулбар) побеждает цвет колонки
-	const style = cell.style;
+	// Цвета ячеек — только из функций колонки (пользовательских стилей больше нет)
 	// Ячейка под редактором: заливку не рисуем — белый фон, как у остальных
 	// редакторов (сквозь прозрачный select-триггер просвечивали заливка и
 	// зелёная подсветка выделения)
@@ -1950,8 +1949,8 @@ function renderCellContent(
 		&& Number(el.dataset.col) === editingCell.col;
 	el.style.backgroundColor = isEdited
 		? ""
-		: style?.background ?? resolveColumnColor(colDef?.backgroundColor, cell.value) ?? "";
-	el.style.color = style?.color ?? resolveColumnColor(colDef?.color, cell.value) ?? "";
+		: resolveColumnColor(colDef?.backgroundColor, cell.value) ?? "";
+	el.style.color = resolveColumnColor(colDef?.color, cell.value) ?? "";
 	// Выравнивание из дефолта колонки (flex-контейнеру нужен justify-content)
 	const align = colDef ? getCellAlign(colDef) : undefined;
 	if (align === "right") el.style.justifyContent = "flex-end";

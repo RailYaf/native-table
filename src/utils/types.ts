@@ -73,14 +73,6 @@ export interface ColumnDef {
 	fixed?: "left" | "right";
 }
 
-/** Пользовательский стиль ячейки (применяется через тулбар/меню). */
-export interface CellStyle {
-	/** Цвет заливки ячейки (CSS-цвет) */
-	background?: string;
-	/** Цвет текста (CSS-цвет) */
-	color?: string;
-}
-
 /** Скалярное значение ячейки: строка, число, boolean, null или массив строк/чисел (для array/json). */
 export type ScalarCellValue = string | number | boolean | null | string[] | number[];
 
@@ -89,8 +81,6 @@ export interface Cell {
 	value?: ScalarCellValue;
 	/** Готовый текст для отображения (отформатирован по типу колонки) */
 	display?: string;
-	/** Пользовательский стиль ячейки (жирный, цвет и т.д.) */
-	style?: CellStyle;
 }
 
 // ── Структурированные колбэки (data-ориентированный API) ────────────────────

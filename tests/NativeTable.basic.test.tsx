@@ -159,6 +159,48 @@ describe("NativeTable: базовые сценарии", () => {
 		expect(changes).toEqual([{ deletedRowId: 2 }]);
 	});
 
+	it("копирование/вставка boolean и select переносит сырые значения", () => {
+		const onChange = vi.fn();
+		const columns = [
+			{ name: "name", label: "Имя", width: 120 },
+			{ name: "active", label: "Активен", type: "boolean" as const, width: 100 },
+			{
+				name: "status", label: "Статус", type: "select" as const, width: 140,
+				options: [
+					{ value: "done", label: "Готово" },
+					{ value: "todo", label: "К выполнению" },
+				],
+			},
+		];
+		const data = [
+			{ id: 1, name: "A", active: true, status: "done" },
+			{ id: 2, name: "B", active: false, status: "todo" },
+		];
+		const { container } = render(<NativeTable data={data} columns={columns} onChange={onChange} />);
+		const root = container.querySelector(".nt-root")!;
+
+		// Копируем boolean=true из первой строки и вставляем в (1,1)
+		fireEvent.mouseDown(findCell(container, 0, 1), cellCenter(findCell(container, 0, 1)));
+		fireEvent.keyDown(root, { key: "c", ctrlKey: true, code: "KeyC" });
+		fireEvent.mouseDown(findCell(container, 1, 1), cellCenter(findCell(container, 1, 1)));
+		fireEvent.paste(document);
+		const boolChange = onChange.mock.calls.at(-1)![1][0] as { columnName: string; value: unknown };
+		expect(boolChange.columnName).toBe("active");
+		expect(boolChange.value).toBe(true);
+
+		// Копируем select=done и вставляем в (1,2)
+		onChange.mockClear();
+		fireEvent.mouseDown(findCell(container, 0, 2), cellCenter(findCell(container, 0, 2)));
+		fireEvent.keyDown(root, { key: "c", ctrlKey: true, code: "KeyC" });
+		fireEvent.mouseDown(findCell(container, 1, 2), cellCenter(findCell(container, 1, 2)));
+		fireEvent.paste(document);
+		const selectChange = onChange.mock.calls.at(-1)![1][0] as { columnName: string; value: unknown };
+		expect(selectChange.columnName).toBe("status");
+		expect(selectChange.value).toBe("done");
+		// Отображается подпись, а не сырое значение
+		expect(cellText(container, 1, 2)).toBe("Готово");
+	});
+
 	it("показывает «Нет данных» при пустых data", () => {
 		const { container } = render(<NativeTable data={[]} columns={testColumns} />);
 		expect(container.textContent).toContain("Нет данных");

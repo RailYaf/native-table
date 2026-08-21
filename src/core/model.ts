@@ -72,9 +72,7 @@ export class SheetModel {
 			this.cells.delete(key);
 			return;
 		}
-		const existing = this.cells.get(key);
 		const next: Cell = { value: parseLiteral(raw, colType) };
-		if (existing?.style) next.style = existing.style;
 		this.cells.set(key, next);
 	}
 

@@ -20,7 +20,6 @@ import { generateTempId } from "../utils/data-convert";
 import { DEFAULT_ROW_HEIGHT, INDEX_HEADER_WIDTH, MIN_COL_WIDTH } from "../utils/consts";
 import type {
 	Cell,
-	CellStyle,
 	ChangeAction,
 	ColumnDef,
 	LayoutData,
@@ -66,14 +65,13 @@ export class NativeSheet {
 	/** Скопированный диапазон (пунктирная рамка) */
 	private copyRect: SelectionRect | null = null;
 	/**
-	 * Внутренний буфер обмена: хранит СЫРЫЕ значения, а не отображаемые.
-	 * Иначе «Да»/подпись select после вставки записались бы в данные.
+	 * Внутренний буфер обмена: хранит отображаемые значения.
+	 * Конвертация в сырые — при вставке (convertPastedValue).
 	 */
 	private clipboard: {
 		width: number;
 		height: number;
 		values: ScalarCellValue[][];
-		styles: (CellStyle | null)[][];
 	} | null = null;
 
 	private options: NativeSheetOptions;
@@ -889,12 +887,10 @@ export class NativeSheet {
 		if (!b) return;
 
 		const values: ScalarCellValue[][] = [];
-		const styles: (CellStyle | null)[][] = [];
 		const text: string[] = [];
 
 		for (let r = b.sr; r <= b.er; r++) {
 			const valueRow: ScalarCellValue[] = [];
-			const styleRow: (CellStyle | null)[] = [];
 			const textRow: string[] = [];
 			for (let c = b.sc; c <= b.ec; c++) {
 			const cell = this.model.get(this.toDataRow(r), c);
@@ -902,9 +898,9 @@ export class NativeSheet {
 			const formatted = FORMATTED_TYPES.has(colDef?.type ?? "")
 				? formatCellDisplay(cell.value ?? null, colDef)
 				: (cell.value ?? null);
+			// Внутренний буфер хранит отображаемые значения; обратная
+			// конвертация в сырые происходит при вставке (convertPastedValue)
 			valueRow.push(formatted);
-			styleRow.push(cell.style ?? null);
-			// В буфер ОС уходит человекочитаемый текст
 			textRow.push(
 				FORMATTED_TYPES.has(colDef?.type ?? "")
 					? formatted as string
@@ -912,11 +908,10 @@ export class NativeSheet {
 			);
 			}
 			values.push(valueRow);
-			styles.push(styleRow);
 			text.push(textRow.join("\t"));
 		}
 
-		this.clipboard = { width: b.ec - b.sc + 1, height: b.er - b.sr + 1, values, styles };
+		this.clipboard = { width: b.ec - b.sc + 1, height: b.er - b.sr + 1, values };
 		// Буфер ОС может быть недоступен (нет разрешения, не-secure origin) —
 		// внутренняя копия при этом всё равно работает
 		navigator.clipboard?.writeText(text.join("\n")).catch(() => undefined);
@@ -941,26 +936,22 @@ export class NativeSheet {
 		const parsed = rows.map((row) => row.split("\t"));
 		const height = parsed.length;
 		const width = Math.max(...parsed.map((r) => r.length));
-		const styles: (null)[][] = [];
 
 		const values: ScalarCellValue[][] = [];
 		for (let r = 0; r < height; r++) {
 			const row: ScalarCellValue[] = [];
-			const styleRow: (null)[] = [];
 			for (let c = 0; c < width; c++) {
 				row.push(parsed[r]?.[c] ?? null);
-				styleRow.push(null);
 			}
 			values.push(row);
-			styles.push(styleRow);
 		}
-		this.clipboard = { width, height, values, styles };
+		this.clipboard = { width, height, values };
 		this.paste();
 	}
 
 	/**
-	 * Вставить содержимое внутреннего буфера в выделенный диапазон
-	 * (значения и стили), пропуская заблокированные строки и readOnly-колонки.
+	 * Вставить содержимое внутреннего буфера в выделенный диапазон,
+	 * пропуская заблокированные строки и readOnly-колонки.
 	 */
 	private paste(): void {
 		this.clearCopy();
@@ -980,9 +971,7 @@ export class NativeSheet {
 				if (this.renderer.getColumn(c)?.readOnly) continue;
 
 				const value = this.clipboard.values[r - b.sr]?.[c - b.sc] ?? null;
-				const style = this.clipboard.styles[r - b.sr]?.[c - b.sc];
-				const next: Cell = { value };
-				if (style) next.style = { ...style };
+				const next: Cell = { value: convertPastedValue(value, this.renderer.getColumn(c)) };
 
 				this.writeCell(dr, c, next, changed);
 			}
@@ -1220,7 +1209,6 @@ export class NativeSheet {
 						? (srcNumbers[0] as number) + stepPerRow * (r - src.sr)
 						: sample.value ?? null,
 				};
-				if (sample.style) next.style = { ...sample.style };
 
 				this.writeCell(dr, c, next, changed);
 			}
@@ -1515,6 +1503,34 @@ function stringifyValue(value: ScalarCellValue | undefined): string {
 	return value === null || value === undefined ? "" : String(value);
 }
 
+/**
+ * Конвертировать вставляемое значение под тип колонки-приёмника.
+ * Буфер хранит отображаемые значения («Да»/«Нет», подпись select) —
+ * при вставке приводим их обратно к сырым (true/false, value опции).
+ */
+function convertPastedValue(value: ScalarCellValue, colDef?: ColumnDef): ScalarCellValue {
+	if (value === null || value === undefined) return value ?? null;
+
+	if (colDef?.type === "boolean") {
+		if (typeof value === "boolean") return value;
+		const s = String(value).trim().toLowerCase();
+		if (s === "да" || s === "yes" || s === "true" || s === "1") return true;
+		if (s === "нет" || s === "no" || s === "false" || s === "0") return false;
+		return value;
+	}
+
+	if (colDef?.type === "select" && colDef.options?.length) {
+		const s = String(value);
+		const byValue = colDef.options.find((o) => String(o.value) === s);
+		if (byValue) return byValue.value;
+		const byLabel = colDef.options.find((o) => o.label === s);
+		if (byLabel) return byLabel.value;
+		return value;
+	}
+
+	return value;
+}
+
 /** Число из значения ячейки; null — пусто или не число. */
 function toNumber(value: ScalarCellValue | undefined): number | null {
 	if (value === null || value === undefined || value === "") return null;
@@ -1528,15 +1544,11 @@ function cycle(offset: number, mod: number): number {
 	return ((offset % mod) + mod) % mod;
 }
 
-/** Поверхностное сравнение ячеек (значение, отображение, стиль). */
+/** Поверхностное сравнение ячеек (значение, отображение). */
 function cellsEqual(a: Cell | null, b: Cell | null): boolean {
 	if (a === b) return true;
 	if (!a || !b) return false;
-	return (
-		a.value === b.value &&
-		a.display === b.display &&
-		JSON.stringify(a.style ?? null) === JSON.stringify(b.style ?? null)
-	);
+	return a.value === b.value && a.display === b.display;
 }
 
 /** Максимальный индекс строки в данных (для пагинации). */
