@@ -9,7 +9,7 @@ import type { SheetModel } from "../core/model";
 import type { SheetView } from "../core/sheet-view";
 import type { Cell, ColumnDef } from "../utils/types";
 import { DatePickerPopup } from "./date-picker";
-import { onDismiss } from "./popup-utils";
+import { flipNearBox, hostViewport, onDismiss } from "./popup-utils";
 
 export type CommitDirection = "enter" | "tab" | "shift-tab" | "none";
 
@@ -219,13 +219,13 @@ export class Editor {
 		this.host.append(dropdown);
 		this.dropdownEl = dropdown;
 
-		// Определить направление: если не помещается снизу — показать сверху
+		// Разместить внутри видимого вьюпорта: флип вверх/влево, если ячейка
+		// у нижнего/правого края таблицы (иначе дропдаун уходит за обрез)
+		const ddW = dropdown.offsetWidth || box.width;
 		const ddH = dropdown.offsetHeight || 100;
-		const hostH = this.host.clientHeight;
-		const fitsBelow = box.top + box.height + ddH <= hostH;
-		dropdown.style.top = fitsBelow
-			? `${box.top + box.height}px`
-			: `${box.top - ddH}px`;
+		const pos = flipNearBox(box, ddW, ddH, hostViewport(this.host));
+		dropdown.style.left = `${pos.left}px`;
+		dropdown.style.top = `${pos.top}px`;
 		dropdown.style.visibility = "";
 
 		// Начальная позиция — текущий выбранный пункт: прокручиваем к нему
@@ -325,6 +325,7 @@ export class Editor {
 		this.mode = "array";
 		this.arrayContainer = container;
 		container.classList.add("nt-editor--active");
+		this.flipPopup(container, box, 200, 100);
 
 		this.disposeDropdown = onDismiss(() => [container], () => this.commitArray());
 	}
@@ -364,6 +365,8 @@ export class Editor {
 		if (!this.arrayContainer) return;
 		this.arrayContainer.style.width = "";
 		this.arrayContainer.style.height = "";
+		// Размер изменился — пересчитать позицию внутри видимого вьюпорта
+		this.flipPopup(this.arrayContainer, this.getCellBox(this.row, this.col), 200, 100);
 	}
 
 	private commitArray(): void {
@@ -438,9 +441,24 @@ export class Editor {
 		this.jsonTextarea = textarea;
 		this.jsonError = error;
 		container.classList.add("nt-editor--active");
+		this.flipPopup(container, box, 400, 140);
 		textarea.focus();
 
 		this.disposeDropdown = onDismiss(() => [container], () => this.commitJson());
+	}
+
+	/** Разместить редактор-попап (array/json) внутри видимого вьюпорта с флипами. */
+	private flipPopup(
+		el: HTMLElement,
+		box: { left: number; top: number; width: number; height: number },
+		minW: number,
+		minH: number,
+	): void {
+		const w = el.offsetWidth || minW;
+		const h = el.offsetHeight || minH;
+		const pos = flipNearBox(box, w, h, hostViewport(this.host));
+		el.style.left = `${pos.left}px`;
+		el.style.top = `${pos.top}px`;
 	}
 
 	private commitJson(): void {

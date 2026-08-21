@@ -66,3 +66,48 @@ export function stopEventPropagation(el: HTMLElement): void {
 	el.addEventListener("mousedown", (ev) => ev.stopPropagation());
 	el.addEventListener("click", (ev) => ev.stopPropagation());
 }
+
+/**
+ * Видимый прямоугольник скролл-вьюпорта в координатах host-слоя (cellsLayer).
+ * Внутритабличные попапы (select-дропдаун, календарь) позиционируются
+ * в координатах cellsLayer, поэтому границы видимости считаем от него:
+ * слой смещён вправо на INDEX_HEADER_WIDTH внутри прокручиваемой области.
+ */
+export function hostViewport(
+	host: HTMLElement,
+): { left: number; top: number; right: number; bottom: number } {
+	const body = host.closest<HTMLElement>(".nt-body") ?? host;
+	const offsetX = parseFloat(host.style.left ?? "0") || 0;
+	return {
+		left: body.scrollLeft - offsetX,
+		top: body.scrollTop,
+		right: body.scrollLeft + body.clientWidth - offsetX,
+		bottom: body.scrollTop + body.clientHeight,
+	};
+}
+
+/**
+ * Разместить попап размера popupW×popupH возле ячейки box, не выходя за
+ * видимый вьюпорт: если не влезает справа — выравниваем правый край попапа
+ * по правому краю ячейки; если не влезает снизу — показываем над ячейкой.
+ * Координаты — в той же системе, что и box (cellsLayer).
+ */
+export function flipNearBox(
+	box: { left: number; top: number; width: number; height: number },
+	popupW: number,
+	popupH: number,
+	viewport: { left: number; top: number; right: number; bottom: number },
+): { left: number; top: number } {
+	let left = box.left;
+	if (left + popupW > viewport.right) {
+		left = Math.max(viewport.left, box.left + box.width - popupW);
+	}
+
+	let top = box.top + box.height;
+	if (top + popupH > viewport.bottom) {
+		top = box.top - popupH;
+	}
+	if (top < viewport.top) top = viewport.top;
+
+	return { left, top };
+}

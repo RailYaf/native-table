@@ -6,6 +6,8 @@
 // день и время выбираются, а применяются только по кнопке. Живёт в host-слое
 // ячейки (координаты — как у box редактора), закрывается по клику вне.
 
+import { flipNearBox, hostViewport } from "./popup-utils";
+
 const MONTHS_RU = [
 	"Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
 	"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
@@ -187,13 +189,10 @@ export class DatePickerPopup {
 		this.el.style.minWidth = `${Math.max(box.width, withTime ? 340 : 220)}px`;
 		const popupW = this.el.offsetWidth || 220;
 		const popupH = this.el.offsetHeight || 280;
-		const hostH = this.host.clientHeight;
-		const maxLeft = Math.max(0, this.host.clientWidth - popupW);
-		this.el.style.left = `${Math.min(box.left, maxLeft)}px`;
-		const fitsBelow = box.top + box.height + popupH <= hostH;
-		this.el.style.top = fitsBelow
-			? `${box.top + box.height}px`
-			: `${Math.max(0, box.top - popupH)}px`;
+		// Разместить внутри видимого вьюпорта: флип вверх/влево у краёв таблицы
+		const pos = flipNearBox(box, popupW, popupH, hostViewport(this.host));
+		this.el.style.left = `${pos.left}px`;
+		this.el.style.top = `${pos.top}px`;
 		this.el.style.visibility = "";
 		this.openState = true;
 
