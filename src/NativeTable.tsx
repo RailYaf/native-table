@@ -228,8 +228,10 @@ export function NativeTable({
 				},
 				onSave: (cells) => {
 					const leafNames = leafNamesRef.current;
-					const rowIds = rowIdsRef.current;
-					const rows = cellsToSaveRows(cells, leafNames, rowIds);
+					// Живые rowIds (с temp-id новых строк) — чтобы id созданных строк
+					// совпадали с id из onChange
+					const liveRowIds = sheetRef.current?.renderer.rowIds ?? rowIdsRef.current;
+					const rows = cellsToSaveRows(cells, leafNames, liveRowIds);
 
 					// Все строки таблицы: { id, ...значения колонок }
 					const allRows: Record<string, unknown>[] = rows.map((r) => ({ id: r.rowId, ...r.values }));
@@ -237,16 +239,19 @@ export function NativeTable({
 					// Гранулярные изменения для сохранения
 					const changes: ChangeItem[] = [];
 
-					// Удалённые строки: исходные rowId, которых больше нет среди текущих
+					// Удалённые строки: только исходные rowId из data, которых больше
+					// нет среди текущих. Фантомные строки и temp-id не считаем —
+					// таких строк в базе нет.
+					const originalRowIds = convertedRef.current.rowIds;
 					const savedIds = new Set(rows.map((r) => r.rowId));
-					for (const id of rowIds) {
-						if (!savedIds.has(id)) changes.push({ deletedRowId: id });
+					for (const id of originalRowIds) {
+						if (!isTempRowId(id) && !savedIds.has(id)) changes.push({ deletedRowId: id });
 					}
 
 					// База для diff существующих строк — исходные (типизированные) значения из data
 					const initialData = convertedRef.current.initialData;
 					const rowIndexById = new Map<string | number, number>();
-					rowIds.forEach((id, idx) => rowIndexById.set(id, idx));
+					originalRowIds.forEach((id, idx) => rowIndexById.set(id, idx));
 
 					for (const r of rows) {
 						if (isTempRowId(r.rowId)) {

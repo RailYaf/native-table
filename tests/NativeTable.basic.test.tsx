@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { NativeTable } from "../src";
-import { cellText, dblClickCell, editCell, findCell, testColumns, testData } from "./helpers";
+import { cellCenter, cellText, dblClickCell, editCell, findCell, testColumns, testData } from "./helpers";
 
 describe("NativeTable: базовые сценарии", () => {
 	it("рендерит заголовки и значения ячеек", () => {
@@ -107,6 +107,56 @@ describe("NativeTable: базовые сценарии", () => {
 		expect(changes).toHaveLength(1);
 		expect(changes[0]).toMatchObject({ columnName: "name", value: "Delta" });
 		expect(String(changes[0].updatedRowId)).toMatch(/^new_/);
+	});
+
+	it("onSave не шлёт deletedRowId для фантомных строк", () => {
+		const onChange = vi.fn();
+		const onSave = vi.fn();
+		const { container } = render(
+			<NativeTable data={testData} columns={testColumns} onChange={onChange} onSave={onSave} />,
+		);
+
+		// Разворачиваем таблицу — появляются фантомные строки с temp-id
+		const body = container.querySelector(".nt-body")!;
+		fireEvent.scroll(body);
+
+		// Вводим значение в новую строку и сохраняем
+		editCell(findCell(container, 3, 0), "Delta");
+		fireEvent.click(container.querySelector('[data-action="save"]')!);
+
+		const [, changes] = onSave.mock.calls[0];
+		// Только созданная ячейка, без «удаления» пустых фантомов
+		expect(changes).toHaveLength(1);
+		expect(changes[0]).toMatchObject({ columnName: "name", value: "Delta" });
+		expect(String(changes[0].createdRowId)).toMatch(/^new_/);
+		expect(changes.some((c) => "deletedRowId" in c)).toBe(false);
+
+		// id новой строки в onSave совпадает с id из onChange
+		const [, onChangeChanges] = onChange.mock.calls.at(-1)! as [unknown, Array<{ updatedRowId?: string | number }>];
+		expect((changes[0] as { createdRowId?: string | number }).createdRowId).toBe(onChangeChanges[0].updatedRowId);
+	});
+
+	it("после удаления строки onSave шлёт правильный deletedRowId", () => {
+		const onSave = vi.fn();
+		const { container } = render(
+			<NativeTable data={testData} columns={testColumns} onSave={onSave} />,
+		);
+
+		// Удаляем строку с id=2 (Beta) через контекстное меню:
+		// правый mousedown переносит выделение на ячейку под курсором
+		const cell = findCell(container, 1, 0);
+		fireEvent.mouseDown(cell, { button: 2, ...cellCenter(cell) });
+		fireEvent.contextMenu(cell, cellCenter(cell));
+		const deleteItem = [...document.querySelectorAll(".nt-context-menu-item")]
+			.find((el) => el.textContent?.includes("Удалить строки"));
+		expect(deleteItem).toBeTruthy();
+		fireEvent.click(deleteItem!);
+
+		fireEvent.click(container.querySelector('[data-action="save"]')!);
+
+		const [, changes] = onSave.mock.calls[0];
+		// Удалён именно id=2, а значения Gamma не «приклеились» к чужим id
+		expect(changes).toEqual([{ deletedRowId: 2 }]);
 	});
 
 	it("показывает «Нет данных» при пустых data", () => {

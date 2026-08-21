@@ -369,13 +369,19 @@ export class NativeSheet {
 	/** Догенерировать temp rowIds для новых строк при расширении. */
 	private extendRowIds(): void {
 		const total = this.renderer.totalRows;
-		if (!this.options.rowIds) this.options.rowIds = [];
-		for (let r = this.options.rowIds.length; r < total; r++) {
+		const current = this.options.rowIds ?? [];
+		if (current.length >= total) return;
+		// Не мутируем массив адаптера (переданный по ссылке из NativeTable):
+		// иначе в onSave фантомные строки посчитаются «удалёнными»
+		const extended = current.slice();
+		for (let r = extended.length; r < total; r++) {
 			let tid = this._tempRowIds.get(r);
 			if (!tid) { tid = generateTempId(); this._tempRowIds.set(r, tid); }
-			this.options.rowIds[r] = tid;
+			extended[r] = tid;
 			this.applyRowDefaults(r);
 		}
+		this.options.rowIds = extended;
+		this.renderer.rowIds = extended;
 	}
 
 	/** Применить ColumnDef.default для строки (новые строки при insert/expand). */
@@ -1049,7 +1055,7 @@ export class NativeSheet {
 	 */
 	private insertRow(atDisplayRow: number): void {
 		const dr = this.toDataRow(Math.max(0, atDisplayRow));
-		this.applyRowStructureChange("insert", () => this.model.insertRowAt(dr), 1);
+		this.applyRowStructureChange("insert", () => this.model.insertRowAt(dr), 1, { insertedAt: dr });
 		this.applyRowDefaults(dr);
 		this.view.markRowFresh(dr);
 	}
@@ -1070,17 +1076,24 @@ export class NativeSheet {
 			dataRows.add(dr);
 		}
 
-		this.applyRowStructureChange("delete", () => this.model.deleteRowSet(dataRows), -dataRows.size);
+		this.applyRowStructureChange("delete", () => this.model.deleteRowSet(dataRows), -dataRows.size, { deleted: dataRows });
 	}
 
 	/**
 	 * Выполнить структурное изменение (вставка/удаление строк) с записью в историю
 	 * и сдвигом границы данных в SheetView.
 	 * @param delta сдвиг _dataRowCount: +1 при вставке, −N при удалении N строк.
+	 * @param rows какие data-строки затронуты (для синхронизации rowIds)
 	 */
-	private applyRowStructureChange(action: ChangeAction, mutate: () => void, delta: number): void {
+	private applyRowStructureChange(
+		action: ChangeAction,
+		mutate: () => void,
+		delta: number,
+		rows?: { deleted?: Set<number>; insertedAt?: number },
+	): void {
 		const before = this.model.getAll();
 		mutate();
+		this.syncRowIds(rows);
 		this.view.shiftDataRowCount(delta);
 		const after = this.model.getAll();
 
@@ -1100,6 +1113,40 @@ export class NativeSheet {
 		this.syncView();
 		this.model.emit(action, changed);
 		this.renderer.refreshValues();
+	}
+
+	/**
+	 * Синхронизировать options.rowIds/renderer.rowIds со структурным изменением:
+	 * удалённые data-строки убирают свои id, вставленная строка получает temp-id.
+	 * Без этого после сдвига строк значения на save «приклеиваются» к чужим id.
+	 */
+	private syncRowIds(rows?: { deleted?: Set<number>; insertedAt?: number }): void {
+		if (!rows) return;
+		const current = this.options.rowIds ?? [];
+		let next: (string | number)[];
+		if (rows.deleted) {
+			next = current.filter((_, i) => !rows.deleted!.has(i));
+		} else {
+			next = current.slice();
+			next.splice(rows.insertedAt!, 0, generateTempId());
+		}
+		this.options.rowIds = next;
+		this.renderer.rowIds = next;
+		this.rowIdToIndex.clear();
+		next.forEach((id, idx) => this.rowIdToIndex.set(String(id), idx));
+
+		// _tempRowIds привязаны к индексам строк — сдвинуть вслед за моделью
+		const shifted = new Map<number, string>();
+		for (const [r, tid] of this._tempRowIds) {
+			if (rows.deleted) {
+				if (rows.deleted.has(r)) continue;
+				const offset = [...rows.deleted].filter((d) => d < r).length;
+				shifted.set(r - offset, tid);
+			} else {
+				shifted.set(r >= rows.insertedAt! ? r + 1 : r, tid);
+			}
+		}
+		this._tempRowIds = shifted;
 	}
 
 	// ──────────────────────────────────────────────────────────────────────────
