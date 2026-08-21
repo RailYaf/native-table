@@ -9,6 +9,7 @@ import { DataTableGroupedColumns } from "./DataTableGroupedColumns";
 import { DataTableValidation } from "./DataTableValidation";
 import { DataTablePagination } from "./DataTablePagination";
 import { DataTableReadOnly } from "./DataTableReadOnly";
+import { DataTableDisabledRows } from "./DataTableDisabledRows";
 import { DataTableTheme } from "./DataTableTheme";
 import { DataTableStyling } from "./DataTableStyling";
 
@@ -18,7 +19,8 @@ const demos = [
 	{ id: "grouped", title: "Группированные заголовки", component: DataTableGroupedColumns },
 	{ id: "validation", title: "Валидация", component: DataTableValidation },
 	{ id: "pagination", title: "Пагинация (server-side)", component: DataTablePagination },
-	{ id: "readonly", title: "Только чтение / disabled", component: DataTableReadOnly },
+	{ id: "readonly", title: "Только чтение", component: DataTableReadOnly },
+	{ id: "disabled-rows", title: "Заблокированные строки", component: DataTableDisabledRows },
 	{ id: "theme", title: "Тёмная тема", component: DataTableTheme },
 	{ id: "styling", title: "Стилизация ячеек", component: DataTableStyling },
 ];

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NativeTable } from "../src";
 import type { ColumnDef } from "../src/utils/types";
 
@@ -15,14 +16,16 @@ const initialData = [
 	{ id: 4, account: "40817-810-1-0004", owner: "ООО «Луч»", balance: 230500.75, frozen: false },
 ];
 
-export function DataTableReadOnly() {
+export function DataTableDisabledRows() {
+	const [data, setData] = useState(initialData);
 	return (
 		<div className="demo-panel">
-			<h3>Только чтение: редактирование и тулбар отключены</h3>
+			<h3>Заблокированные строки (id 2 и 3) и без добавления новых</h3>
 			<NativeTable
-				data={initialData}
+				data={data}
 				columns={columns}
-				readOnly
+				onSave={(allRows) => setData(allRows as typeof initialData)}
+				disabledRows={[2, 3]}
 				allowAddRows={false}
 				style={{ maxHeight: 500 }}
 			/>
