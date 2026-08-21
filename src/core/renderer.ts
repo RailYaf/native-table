@@ -1240,7 +1240,7 @@ export class Renderer {
 			}
 		}
 		// Fixed-слои не входят в this.rows: перерисовать прилипшие ячейки
-		// по dataset.col, иначе заливка/правки на fixed-колонках не видны до скролла
+		// по dataset.col, иначе цвета/правки на fixed-колонках не видны до скролла
 		for (const pool of this.fixedLeftRows) {
 			this.refreshFixedPoolRow(pool);
 		}

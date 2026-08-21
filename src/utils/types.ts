@@ -225,7 +225,7 @@ export interface CellConfig {
 	capLines?: number;
 }
 
-/** Идентификаторы кнопок тулбара (используются в ToolbarConfig.hidden и data-action). */
+/** Идентификаторы кнопок тулбара (используются в hiddenToolbarActions и data-action). */
 export type ToolbarButton = "save" | "undo" | "redo";
 
 export interface NativeSheetOptions {

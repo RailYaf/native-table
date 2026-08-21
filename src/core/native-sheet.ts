@@ -3,7 +3,7 @@
 // Координирует подсистемы: Renderer (виртуальный DOM + скролл), SheetModel
 // (данные), SheetView (сортировка/фильтр), Editor, SelectionOverlay,
 // UndoManager, ContextMenu/SortFilterPopup. DOM нативный, рендерятся только
-// видимые ячейки; лейаут отдаётся через onSave — персистенция на стороне адаптера.
+// видимые ячейки; лейаут отдаётся через onLayoutChange — персистенция на стороне адаптера.
 
 import { UndoManager } from "../services/undo-manager";
 import { ContextMenu, type ContextMenuItem } from "../ui/context-menu";
@@ -1410,8 +1410,8 @@ export class NativeSheet {
 	// ──────────────────────────────────────────────────────────────────────────
 
 	/**
-	 * Обновить состояние кнопок тулбара: undo/redo по доступности истории,
-	 * индикатор несохранённых изменений, блокировка заливки/цвета для новых строк.
+	 * Обновить состояние кнопок тулбара: undo/redo по доступности истории
+	 * и индикатор несохранённых изменений.
 	 */
 	private updateToolbar(): void {
 		const root = this.toolbarEl;
