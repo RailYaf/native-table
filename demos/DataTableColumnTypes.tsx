@@ -32,7 +32,6 @@ export function DataTableColumnTypes() {
 	const [data, setData] = useState(initialData);
 	return (
 		<div className="demo-panel">
-			<h3>Встроенные редакторы: select, date, datetime, boolean, number, array, json</h3>
 			<NativeTable
 				data={data}
 				columns={columns}

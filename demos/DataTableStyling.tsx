@@ -4,8 +4,10 @@ import type { ColumnDef, LayoutData } from "../src/utils/types";
 
 const columns: ColumnDef[] = [
 	{ name: "project", label: "Проект", width: 180 },
-	{ name: "manager", label: "Менеджер", width: 160 },
-	{ name: "progress", label: "Готовность, %", type: "number", width: 140,
+	{ name: "manager", label: "Менеджер", width: 140 },
+	{ name: "deadline", label: "Срок", type: "date", width: 120 },
+	{ name: "budget", label: "Бюджет, млн ₽", type: "number", decimals: 1, width: 130 },
+	{ name: "progress", label: "Готовность, %", type: "number", width: 130,
 		color: (v) => {
 			const n = Number(v);
 			if (n >= 100) return "#1e7e34";
@@ -28,10 +30,10 @@ const columns: ColumnDef[] = [
 ];
 
 const initialData = [
-	{ id: 1, project: "Мобильное приложение", manager: "Иванов", progress: 80, status: "on-track" },
-	{ id: 2, project: "Портал ДБО", manager: "Петрова", progress: 45, status: "at-risk" },
-	{ id: 3, project: "Миграция БД", manager: "Сидоров", progress: 100, status: "on-track" },
-	{ id: 4, project: "Интеграция CRM", manager: "Козлова", progress: 15, status: "delayed" },
+	{ id: 1, project: "Мобильное приложение", manager: "Иванов", deadline: "2026-09-30", budget: 45.5, progress: 80, status: "on-track" },
+	{ id: 2, project: "Портал ДБО", manager: "Петрова", deadline: "2026-10-15", budget: 32.0, progress: 45, status: "at-risk" },
+	{ id: 3, project: "Миграция БД", manager: "Сидоров", deadline: "2026-08-25", budget: 12.8, progress: 100, status: "on-track" },
+	{ id: 4, project: "Интеграция CRM", manager: "Козлова", deadline: "2026-11-05", budget: 20.3, progress: 15, status: "delayed" },
 ];
 
 export function DataTableStyling() {
@@ -43,7 +45,6 @@ export function DataTableStyling() {
 
 	return (
 		<div className="demo-panel">
-			<h3>Цвета колонок (color / backgroundColor) и сохранение ширин через onLayoutChange</h3>
 			<NativeTable
 				data={initialData}
 				columns={columns}

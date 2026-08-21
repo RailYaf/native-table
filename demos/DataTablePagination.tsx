@@ -4,8 +4,11 @@ import type { ColumnDef } from "../src/utils/types";
 
 const columns: ColumnDef[] = [
 	{ name: "order", label: "Заказ", width: 120 },
-	{ name: "client", label: "Клиент", width: 200 },
+	{ name: "client", label: "Клиент", width: 180 },
+	{ name: "date", label: "Дата", type: "date", width: 120 },
 	{ name: "amount", label: "Сумма, ₽", type: "number", decimals: 2, width: 130 },
+	{ name: "manager", label: "Менеджер", width: 140 },
+	{ name: "comment", label: "Комментарий", width: 200 },
 	{ name: "status", label: "Статус", type: "select", width: 140, options: [
 		{ value: "new", label: "Новый" },
 		{ value: "paid", label: "Оплачен" },
@@ -17,7 +20,10 @@ const allOrders = Array.from({ length: 57 }, (_, i) => ({
 	id: i + 1,
 	order: `ORD-${String(i + 1).padStart(4, "0")}`,
 	client: ["ООО «Вектор»", "ИП Смирнов", "АО «Прогресс»", "ООО «Луч»", "ИП Козлова"][i % 5],
+	date: `2026-08-${String((i % 28) + 1).padStart(2, "0")}`,
 	amount: Math.round((15000 + i * 1730.5) * 100) / 100,
+	manager: ["Иванов", "Петрова", "Сидоров"][i % 3],
+	comment: i % 4 === 0 ? "Требует подтверждения клиента" : "",
 	status: ["new", "paid", "shipped"][i % 3],
 }));
 
@@ -32,7 +38,6 @@ export function DataTablePagination() {
 
 	return (
 		<div className="demo-panel">
-			<h3>Серверная пагинация: данные страницы приходят извне, всего {allOrders.length} записей</h3>
 			<NativeTable
 				data={data}
 				columns={columns}

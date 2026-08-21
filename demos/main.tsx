@@ -1,11 +1,15 @@
 import { StrictMode, useState } from "react";
+import type { ComponentType } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/styles.css";
 import "./demos.css";
 
 import { DataTableBasic } from "./DataTableBasic";
 import { DataTableColumnTypes } from "./DataTableColumnTypes";
+import { DataTableManyColumns } from "./DataTableManyColumns";
+import { DataTableManyRows } from "./DataTableManyRows";
 import { DataTableGroupedColumns } from "./DataTableGroupedColumns";
+import { DataTableFixedColumns } from "./DataTableFixedColumns";
 import { DataTableValidation } from "./DataTableValidation";
 import { DataTablePagination } from "./DataTablePagination";
 import { DataTableReadOnly } from "./DataTableReadOnly";
@@ -13,15 +17,24 @@ import { DataTableDisabledRows } from "./DataTableDisabledRows";
 import { DataTableTheme } from "./DataTableTheme";
 import { DataTableStyling } from "./DataTableStyling";
 
-const demos = [
-	{ id: "basic", title: "Basic", component: DataTableBasic },
+interface DemoItem {
+	id: string;
+	title: string;
+	component: ComponentType;
+}
+
+const demos: DemoItem[] = [
+	{ id: "basic", title: "Базовый пример", component: DataTableBasic },
 	{ id: "column-types", title: "Типы колонок", component: DataTableColumnTypes },
-	{ id: "grouped", title: "Группированные заголовки", component: DataTableGroupedColumns },
+	{ id: "many-columns", title: "Виртуализация столбцов", component: DataTableManyColumns },
+	{ id: "many-rows", title: "Виртуализация строк", component: DataTableManyRows },
+	{ id: "grouped", title: "Группированная шапка", component: DataTableGroupedColumns },
+	{ id: "fixed-columns", title: "Зафиксированные столбцы", component: DataTableFixedColumns },
 	{ id: "validation", title: "Валидация", component: DataTableValidation },
-	{ id: "pagination", title: "Пагинация (server-side)", component: DataTablePagination },
-	{ id: "readonly", title: "Только чтение", component: DataTableReadOnly },
-	{ id: "disabled-rows", title: "Заблокированные строки", component: DataTableDisabledRows },
-	{ id: "theme", title: "Тёмная тема", component: DataTableTheme },
+	{ id: "pagination", title: "Пагинация", component: DataTablePagination },
+	{ id: "disabled-rows", title: "Задизейбленные строки и столбцы", component: DataTableDisabledRows },
+	{ id: "readonly", title: "Режим просмотра", component: DataTableReadOnly },
+	{ id: "theme", title: "Смена темы", component: DataTableTheme },
 	{ id: "styling", title: "Стилизация ячеек", component: DataTableStyling },
 ];
 

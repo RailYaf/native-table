@@ -36,7 +36,7 @@ export function DataTableTheme() {
 	const [striped, setStriped] = useState(true);
 	return (
 		<div className="demo-panel">
-			<h3>
+			<div style={{ margin: "0 0 12px", fontSize: 16 }}>
 				Тема:{" "}
 				<label style={{ marginRight: 8 }}>
 					<input type="radio" checked={theme === "light"} onChange={() => setTheme("light")} /> светлая
@@ -47,7 +47,7 @@ export function DataTableTheme() {
 				<label>
 					<input type="checkbox" checked={striped} onChange={(e) => setStriped(e.target.checked)} /> зебра
 				</label>
-			</h3>
+			</div>
 			<NativeTable
 				data={initialData}
 				columns={columns}
