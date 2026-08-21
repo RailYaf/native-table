@@ -1,0 +1,103 @@
+/* Стили демо-стенда (не библиотечные, только для страницы примеров) */
+
+body {
+	margin: 0;
+	font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+	background: #f5f6f8;
+}
+
+.demo-layout {
+	display: flex;
+	min-height: 100vh;
+}
+
+.demo-sidebar {
+	width: 260px;
+	flex-shrink: 0;
+	background: #1f2430;
+	color: #fff;
+	padding: 16px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.demo-sidebar h1 {
+	font-size: 18px;
+	margin: 0 8px 16px;
+}
+
+.demo-nav-item {
+	text-align: left;
+	background: transparent;
+	color: #cdd3df;
+	border: none;
+	border-radius: 6px;
+	padding: 8px 10px;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.demo-nav-item:hover {
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.demo-nav-item--active {
+	background: #3d7fff;
+	color: #fff;
+}
+
+.demo-main {
+	flex: 1;
+	padding: 24px 32px;
+	min-width: 0;
+}
+
+.demo-main h2 {
+	margin: 0 0 16px;
+	font-size: 20px;
+}
+
+.demo-panel {
+	background: #fff;
+	border: 1px solid #e3e6ec;
+	border-radius: 8px;
+	padding: 16px;
+	margin-bottom: 16px;
+}
+
+.demo-panel h3 {
+	margin: 0 0 12px;
+	font-size: 15px;
+	color: #333;
+}
+
+.demo-note {
+	color: #888;
+	font-size: 13px;
+	margin: 8px 0 0;
+}
+
+.demo-log {
+	background: #0f1117;
+	color: #9ece6a;
+	font-family: ui-monospace, Menlo, monospace;
+	font-size: 12px;
+	border-radius: 6px;
+	padding: 10px 12px;
+	margin-top: 12px;
+	white-space: pre-wrap;
+	max-height: 220px;
+	overflow: auto;
+}
+
+.demo-inline {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.demo-inline .nt-table-wrapper {
+	flex: 1;
+	min-width: 420px;
+}
