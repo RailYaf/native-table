@@ -472,11 +472,13 @@ export function NativeTable({
 					<div className="nt-loading-spinner" />
 				</div>
 			)}
-			<div className="nt-toolbar" onClick={onToolbar}>
-				{!readOnly && show("save") && <button className="nt-tb-btn nt-tb-save" data-action="save" disabled={hasErrors} data-tooltip="Сохранить (Ctrl+S)"><SaveIcon size={iconSize} /><span className="nt-tb-label">Сохранить</span><span className="nt-tb-dot" /></button>}
-				{!readOnly && show("undo") && <button className="nt-tb-btn" data-action="undo" data-tooltip="Отменить (Ctrl+Z)"><UndoIcon size={iconSize} /><span className="nt-tb-label">Отменить</span></button>}
-				{!readOnly && show("redo") && <button className="nt-tb-btn" data-action="redo" data-tooltip="Вернуть (Ctrl+Y)"><RedoIcon size={iconSize} /><span className="nt-tb-label">Вернуть</span></button>}
-			</div>
+			{!readOnly && (
+				<div className="nt-toolbar" onClick={onToolbar}>
+					{show("save") && <button className="nt-tb-btn nt-tb-save" data-action="save" disabled={hasErrors}><SaveIcon size={iconSize} /><span className="nt-tb-label">Сохранить</span><span className="nt-tb-dot" /></button>}
+					{show("undo") && <button className="nt-tb-btn" data-action="undo"><UndoIcon size={iconSize} /><span className="nt-tb-label">Отменить</span></button>}
+					{show("redo") && <button className="nt-tb-btn" data-action="redo"><RedoIcon size={iconSize} /><span className="nt-tb-label">Вернуть</span></button>}
+				</div>
+			)}
 			<div ref={ref} className={`nt-container nt-root${theme === "dark" ? " nt-dark" : ""}`} style={style} />
 			{pagination && (
 				<div className="nt-pagination">

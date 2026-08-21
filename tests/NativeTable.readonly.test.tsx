@@ -6,9 +6,10 @@ import { NativeTable } from "../src";
 import { cellText, dblClickCell, findCell, testColumns, testData } from "./helpers";
 
 describe("NativeTable: readOnly", () => {
-	it("скрывает кнопки сохранения/undo/redo в readOnly-режиме", () => {
+	it("скрывает тулбар в readOnly-режиме", () => {
 		const { container } = render(<NativeTable data={testData} columns={testColumns} readOnly />);
 
+		expect(container.querySelector(".nt-toolbar")).toBeNull();
 		expect(container.querySelector('[data-action="save"]')).toBeNull();
 		expect(container.querySelector('[data-action="undo"]')).toBeNull();
 		expect(container.querySelector('[data-action="redo"]')).toBeNull();
