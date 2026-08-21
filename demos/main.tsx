@@ -16,6 +16,7 @@ import { DataTableReadOnly } from "./DataTableReadOnly";
 import { DataTableDisabledRows } from "./DataTableDisabledRows";
 import { DataTableTheme } from "./DataTableTheme";
 import { DataTableStyling } from "./DataTableStyling";
+import { ApiReference } from "./ApiReference";
 
 interface DemoItem {
 	id: string;
@@ -36,6 +37,7 @@ const demos: DemoItem[] = [
 	{ id: "readonly", title: "Режим просмотра", component: DataTableReadOnly },
 	{ id: "theme", title: "Смена темы", component: DataTableTheme },
 	{ id: "styling", title: "Стилизация ячеек", component: DataTableStyling },
+	{ id: "api", title: "API", component: ApiReference },
 ];
 
 const getDemoId = (): string => {

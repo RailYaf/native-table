@@ -72,3 +72,55 @@ body {
 	font-size: 13px;
 	margin: 8px 0 0;
 }
+
+.api-section {
+	margin-bottom: 32px;
+}
+
+.api-section h3 {
+	margin: 0 0 12px;
+	font-size: 17px;
+}
+
+.api-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+}
+
+.api-table th,
+.api-table td {
+	border: 1px solid #e3e6ec;
+	padding: 8px 12px;
+	text-align: left;
+	vertical-align: top;
+}
+
+.api-table th {
+	background: #f5f6f8;
+	font-weight: 600;
+}
+
+.api-prop {
+	font-family: ui-monospace, Menlo, monospace;
+	font-weight: 600;
+	color: #c41d7f;
+	white-space: nowrap;
+}
+
+.api-type {
+	font-family: ui-monospace, Menlo, monospace;
+	font-size: 13px;
+	color: #389e0d;
+}
+
+.api-default {
+	font-family: ui-monospace, Menlo, monospace;
+	font-size: 13px;
+	color: #999;
+	white-space: nowrap;
+}
+
+.api-required {
+	white-space: nowrap;
+}
