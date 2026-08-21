@@ -1259,7 +1259,6 @@ export class NativeSheet {
 		const oldWidth = this.renderer.getColWidth(col);
 		// Сосед для «пары» при сужении: справа; у правой границы последней колонки — слева
 		const neighbor = col < this.maxCol() ? col + 1 : col - 1;
-		const oldNeighborWidth = this.renderer.getColWidth(neighbor);
 		const available = this.renderer.bodyDiv.clientWidth - INDEX_HEADER_WIDTH;
 		const shrinkToNeighbor = this.renderer.totalWidth() <= available + 1;
 		this.renderer.suspendAutoHeights = true;
@@ -1295,19 +1294,8 @@ export class NativeSheet {
 				this.overlay.update(this.selection);
 				const newWidth = this.renderer.getColWidth(col);
 				if (newWidth === oldWidth) return;
-				this.undoManager.addRecord({
-					row: 0, col, oldValue: null, newValue: null,
-					colWidth: { old: oldWidth, new: newWidth },
-				});
-				// При сужении изменился и сосед — его ширину тоже возвращаем по Ctrl+Z
-				const newNeighborWidth = this.renderer.getColWidth(neighbor);
-				if (newNeighborWidth !== oldNeighborWidth) {
-					this.undoManager.addRecord({
-						row: 0, col: neighbor, oldValue: null, newValue: null,
-						colWidth: { old: oldNeighborWidth, new: newNeighborWidth },
-					});
-				}
-				this.undoManager.commit();
+				// Изменение ширины не попадает в undo — уходит через onLayoutChange
+				this.emitLayout();
 				this.updateToolbar();
 			},
 		);
@@ -1350,13 +1338,8 @@ export class NativeSheet {
 	 * отменял их раньше более поздних правок ячеек.
 	 */
 	private recordViewChange(mutate: () => void): void {
-		const before = this.view.snapshot();
+		// Сортировка/фильтр не попадают в undo-историю
 		mutate();
-		const after = this.view.snapshot();
-		if (before !== after) {
-			this.undoManager.addRecord({ row: 0, col: 0, oldValue: null, newValue: null, view: { old: before, new: after } });
-			this.undoManager.commit();
-		}
 		this.syncView(); // внутри — updateLayout(), т.е. полная перерисовка
 		this.updateSortIndicators();
 		this.updateToolbar();
@@ -1403,15 +1386,15 @@ export class NativeSheet {
 				const old = this.model.get(dr, c);
 				const next: Cell = { ...old, style: { ...old.style, ...style } };
 				this.model.setSilent(dr, c, next);
-				this.undoManager.record(dr, c, { ...old }, { ...next });
+				// Заливка/цвет текста не попадают в undo-историю
 				changed[cellKey(dr, c)] = { old: { ...old }, new: { ...next } };
 			}
 		}
 
-		this.undoManager.commit();
 		this.updateToolbar();
 		this.model.emit("edit", changed);
 		this.renderer.refreshValues();
+		this.emitLayout();
 	}
 
 	/** Новая строка — без реального rowId из базы. */
@@ -1549,6 +1532,11 @@ export class NativeSheet {
 		for (const el of Array.from(root.querySelectorAll<HTMLLabelElement>(".nt-tb-color-btn"))) {
 			el.toggleAttribute("data-disabled", hasNew);
 		}
+	}
+
+	/** Уведомить адаптер об изменении лейаута (ширины колонок / стили ячеек). */
+	private emitLayout(): void {
+		this.options.onLayoutChange?.(this.collectLayout());
 	}
 
 	/** Собрать данные лейаута (ширины, стили) для onLayoutChange. */
