@@ -201,6 +201,25 @@ describe("NativeTable: базовые сценарии", () => {
 		expect(cellText(container, 1, 2)).toBe("Готово");
 	});
 
+	it("вставка работает после клика по кнопке тулбара", () => {
+		const { container } = render(<NativeTable data={testData} columns={testColumns} />);
+		const root = container.querySelector(".nt-root")!;
+
+		// Копируем Alpha из (0,0)
+		fireEvent.mouseDown(findCell(container, 0, 0), cellCenter(findCell(container, 0, 0)));
+		fireEvent.keyDown(root, { key: "c", ctrlKey: true, code: "KeyC" });
+
+		// Выделяем (1,0), затем фокус уходит на кнопку тулбара
+		fireEvent.mouseDown(findCell(container, 1, 0), cellCenter(findCell(container, 1, 0)));
+		const saveBtn = container.querySelector('[data-action="save"]')!;
+		fireEvent.focusIn(saveBtn);
+
+		// Paste приходит с кнопки тулбара (вне .nt-root, но внутри враппера)
+		fireEvent.paste(saveBtn);
+
+		expect(cellText(container, 1, 0)).toBe("Alpha");
+	});
+
 	it("показывает «Нет данных» при пустых data", () => {
 		const { container } = render(<NativeTable data={[]} columns={testColumns} />);
 		expect(container.textContent).toContain("Нет данных");

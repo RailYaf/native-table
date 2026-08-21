@@ -86,6 +86,8 @@ export class NativeSheet {
 
 	/** Тулбар (.nt-toolbar) текущей таблицы — для scoped поиска кнопок */
 	private toolbarEl: HTMLElement | null = null;
+	/** Враппер таблицы (.nt-table-wrapper): тулбар + контейнер + пагинация */
+	private wrapperEl: HTMLElement | null = null;
 
 	/** Строки, запрещённые к редактированию */
 	disabledRows: Set<string | number>;
@@ -245,16 +247,22 @@ export class NativeSheet {
 		// Paste приходит на сфокусированный элемент — ловим на документе,
 		// чтобы вставка работала, даже если фокус «уехал» с контейнера
 		this.listen(container, "focusin", () => { this.lastFocused = true; });
+		// Флаг гаснет только когда фокус уходит ЗА пределы всей таблицы
+		// (враппер включает тулбар и пагинацию) — иначе после клика по кнопке
+		// тулбара Ctrl+V молча игнорируется
 		this.listen(document, "focusin", (e) => {
-			if (e.target !== this.container && !this.container.contains(e.target as Node)) {
-				this.lastFocused = false;
-			}
+			const el = e.target as Node;
+			const inside = this.wrapperEl
+				? this.wrapperEl === el || this.wrapperEl.contains(el)
+				: this.container === el || this.container.contains(el);
+			if (!inside) this.lastFocused = false;
 		});
 		this.listen(document, "paste", (e) => this.onPaste(e as ClipboardEvent));
 
 		// Тулбар ищем внутри своей .nt-table-wrapper, а не по всему документу:
 		// иначе две таблицы на странице управляли бы кнопками друг друга
-		this.toolbarEl = this.container.closest(".nt-table-wrapper")?.querySelector<HTMLElement>(".nt-toolbar") ?? null;
+		this.wrapperEl = this.container.closest(".nt-table-wrapper");
+		this.toolbarEl = this.wrapperEl?.querySelector<HTMLElement>(".nt-toolbar") ?? null;
 
 		this.renderer.render(true);
 		if (options.serverSide && options.sortFilter) this.updateSortIndicators();
@@ -923,9 +931,14 @@ export class NativeSheet {
 	/** Вставка из внешнего буфера */
 	private onPaste(e: ClipboardEvent): void {
 		if (this.editor.isActive() || this.renderer.readOnly) return;
-		if (!this.lastFocused) return;
+		// Страховка: даже если флаг lastFocused рассинхронизировался, вставка
+		// работает, когда событие пришло из элементов нашей таблицы
+		const target = e.target as Node;
+		const targetInside = this.container.contains(target)
+			|| (this.wrapperEl?.contains(target) ?? false);
+		if (!this.lastFocused && !targetInside) return;
 		// Если уже есть внутренний буфер (Ctrl+C внутри таблицы) — используем его
-		if (this.clipboard) { this.paste(); return; }
+		if (this.clipboard) { e.preventDefault(); this.paste(); return; }
 		const text = e.clipboardData?.getData("text/plain");
 		if (!text) return;
 		e.preventDefault();
