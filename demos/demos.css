@@ -49,6 +49,7 @@ body {
 	flex: 1;
 	padding: 24px 32px;
 	min-width: 0;
+	background: #fff;
 }
 
 .demo-main h2 {
@@ -57,10 +58,6 @@ body {
 }
 
 .demo-panel {
-	background: #fff;
-	border: 1px solid #e3e6ec;
-	border-radius: 8px;
-	padding: 16px;
 	margin-bottom: 16px;
 }
 
