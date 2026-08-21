@@ -1,5 +1,3 @@
-// ── Цвета колонок и сохранение ширин через onLayoutChange ───────────────────
-
 import { useState } from "react";
 import { NativeTable } from "../src";
 import type { ColumnDef, LayoutData } from "../src/utils/types";
@@ -38,26 +36,21 @@ const initialData = [
 
 export function DataTableStyling() {
 	const [widths, setWidths] = useState<Record<string, number>>({});
-	const [log, setLog] = useState("");
 
 	const handleLayout = (layout: LayoutData) => {
-		// Персистенция лейаута: в реальном приложении — сохранение в IndexedDB/на сервер
 		setWidths(layout.widths);
 	};
 
 	return (
 		<div className="demo-panel">
-			<h3>Цвета колонок (color/backgroundColor) и сохранение ширин через onLayoutChange</h3>
+			<h3>Цвета колонок (color / backgroundColor) и сохранение ширин через onLayoutChange</h3>
 			<NativeTable
 				data={initialData}
 				columns={columns}
 				columnWidths={widths}
 				onLayoutChange={handleLayout}
-				onSave={(_, changes) => setLog(JSON.stringify(changes, null, 2))}
-				style={{ maxHeight: 300 }}
+				style={{ maxHeight: 500 }}
 			/>
-			<p className="demo-note">Цвет текста и заливка зависят от значения ячейки (задаются функциями на колонке). Ширины колонок меняются перетаскиванием и попадают в onLayoutChange. Правки данных сохраняются через Ctrl+S.</p>
-			{log && <div className="demo-log">onSave changes:\n{log}</div>}
 		</div>
 	);
 }

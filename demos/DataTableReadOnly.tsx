@@ -1,5 +1,3 @@
-// ── Только чтение и заблокированные строки ─────────────────────────────────
-
 import { useState } from "react";
 import { NativeTable } from "../src";
 import type { ColumnDef } from "../src/utils/types";
@@ -23,24 +21,24 @@ export function DataTableReadOnly() {
 	return (
 		<div>
 			<div className="demo-panel">
-				<h3>readOnly: редактирование полностью запрещено, тулбар скрыт</h3>
+				<h3>Только чтение: редактирование и тулбар отключены</h3>
 				<NativeTable
 					data={initialData}
 					columns={columns}
 					readOnly
 					allowAddRows={false}
-					style={{ maxHeight: 260 }}
+					style={{ maxHeight: 500 }}
 				/>
 			</div>
 			<div className="demo-panel">
-				<h3>disabledRows + allowAddRows={false}: отдельные строки (id 2 и 3) недоступны для правки</h3>
+				<h3>Заблокированные строки (id 2 и 3) и без добавления новых</h3>
 				<NativeTable
 					data={data}
 					columns={columns}
 					onSave={(allRows) => setData(allRows as typeof initialData)}
 					disabledRows={[2, 3]}
 					allowAddRows={false}
-					style={{ maxHeight: 260 }}
+					style={{ maxHeight: 500 }}
 				/>
 			</div>
 		</div>

@@ -1,5 +1,3 @@
-// ── Серверная пагинация: компонент управляется страницей/pageSize извне ─────
-
 import { useMemo, useState } from "react";
 import { NativeTable } from "../src";
 import type { ColumnDef } from "../src/utils/types";
@@ -15,7 +13,6 @@ const columns: ColumnDef[] = [
 	] },
 ];
 
-// «Серверные» данные: 57 заказов
 const allOrders = Array.from({ length: 57 }, (_, i) => ({
 	id: i + 1,
 	order: `ORD-${String(i + 1).padStart(4, "0")}`,
@@ -28,7 +25,6 @@ export function DataTablePagination() {
 	const [page, setPage] = useState(0);
 	const [pageSize, setPageSize] = useState(10);
 
-	// «Запрос на сервер»: срез по текущей странице
 	const data = useMemo(
 		() => allOrders.slice(page * pageSize, page * pageSize + pageSize),
 		[page, pageSize],
@@ -36,11 +32,11 @@ export function DataTablePagination() {
 
 	return (
 		<div className="demo-panel">
-			<h3>Пагинация: данные страницы приходят извне (server-side), всего {allOrders.length} записей</h3>
+			<h3>Серверная пагинация: данные страницы приходят извне, всего {allOrders.length} записей</h3>
 			<NativeTable
 				data={data}
 				columns={columns}
-				style={{ maxHeight: 380 }}
+				style={{ maxHeight: 500 }}
 				pagination={{
 					page,
 					pageSize,
@@ -52,7 +48,6 @@ export function DataTablePagination() {
 					},
 				}}
 			/>
-			<p className="demo-note">Переключение страниц и размера страницы вынесено наружу — компонент сам не фильтрует данные.</p>
 		</div>
 	);
 }

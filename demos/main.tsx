@@ -1,8 +1,3 @@
-// ── Точка входа демо-стенда NativeTable ─────────────────────────────────────
-//
-// Запуск: npm run demo
-// Слева — список примеров (как в antd demos), справа — выбранный пример.
-
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/styles.css";

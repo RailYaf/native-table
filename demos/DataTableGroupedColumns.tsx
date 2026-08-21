@@ -1,5 +1,3 @@
-// ── Группированные заголовки: многоуровневая шапка через children ───────────
-
 import { useState } from "react";
 import { NativeTable } from "../src";
 import type { ColumnDef } from "../src/utils/types";
@@ -35,14 +33,13 @@ export function DataTableGroupedColumns() {
 	const [data, setData] = useState(initialData);
 	return (
 		<div className="demo-panel">
-			<h3>Вложенные колонки (children) + зафиксированная колонка «Регион» при горизонтальном скролле</h3>
+			<h3>Вложенные заголовки (children) и зафиксированная колонка «Регион»</h3>
 			<NativeTable
 				data={data}
 				columns={columns}
 				onSave={(allRows) => setData(allRows as typeof initialData)}
-				style={{ maxHeight: 340 }}
+				style={{ maxHeight: 500 }}
 			/>
-			<p className="demo-note">Прокрутите таблицу вправо — колонка «Регион» останется на месте (fixed: "left").</p>
 		</div>
 	);
 }

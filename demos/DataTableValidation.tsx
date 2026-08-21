@@ -1,5 +1,3 @@
-// ── Валидация: правила на колонках + внешние ошибки/предупреждения ──────────
-
 import { useState } from "react";
 import { NativeTable } from "../src";
 import type { ColumnDef, ValidationError } from "../src/utils/types";
@@ -31,10 +29,10 @@ const initialData = [
 	{ id: 3, email: "sidorov@example.com", login: "sidorov", age: 41, role: "viewer" },
 ];
 
-// Внешние ошибки/предупреждения (например, пришедшие с сервера)
 const serverErrors: ValidationError[] = [
-	{ rowId: 3, columnName: "email", message: "Сервер: e-mail уже используется" },
+	{ rowId: 3, columnName: "email", message: "E-mail уже используется" },
 ];
+
 const serverWarnings: ValidationError[] = [
 	{ rowId: 2, columnName: "age", message: "Проверьте возраст сотрудника" },
 ];
@@ -45,7 +43,7 @@ export function DataTableValidation() {
 
 	return (
 		<div className="demo-panel">
-			<h3>Клиентские правила (required, pattern, unique, minLength) + серверные ошибки и предупреждения</h3>
+			<h3>Клиентские правила (required, pattern, unique, minLength) и серверные ошибки/предупреждения</h3>
 			<NativeTable
 				data={data}
 				columns={columns}
@@ -55,9 +53,8 @@ export function DataTableValidation() {
 					setLog(JSON.stringify(changes, null, 2));
 					setData(allRows as typeof initialData);
 				}}
-				style={{ maxHeight: 300 }}
+				style={{ maxHeight: 500 }}
 			/>
-			<p className="demo-note">Ошибки показываются красным уголком и блокируют кнопку «Сохранить». Дублируйте логин или сломайте e-mail — клиентская валидация сработает при вводе.</p>
 			{log && <div className="demo-log">onSave:\n{log}</div>}
 		</div>
 	);

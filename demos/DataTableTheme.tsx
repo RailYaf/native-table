@@ -1,5 +1,3 @@
-// ── Тёмная тема + striped + цветные колонки ─────────────────────────────────
-
 import { useState } from "react";
 import { NativeTable } from "../src";
 import type { ColumnDef } from "../src/utils/types";
@@ -36,7 +34,6 @@ const initialData = [
 export function DataTableTheme() {
 	const [theme, setTheme] = useState<"light" | "dark">("dark");
 	const [striped, setStriped] = useState(true);
-	const [log, setLog] = useState("");
 	return (
 		<div className="demo-panel">
 			<h3>
@@ -56,11 +53,8 @@ export function DataTableTheme() {
 				columns={columns}
 				theme={theme}
 				striped={striped}
-				onSave={(_, changes) => setLog(JSON.stringify(changes, null, 2))}
-				style={{ maxHeight: 320 }}
+				style={{ maxHeight: 500 }}
 			/>
-			<p className="demo-note">Цвет текста колонки «Изменение» зависит от знака, заливка «Риск» — от значения. Правки работают, сохраняются через Ctrl+S.</p>
-			{log && <div className="demo-log">onSave changes:\n{log}</div>}
 		</div>
 	);
 }

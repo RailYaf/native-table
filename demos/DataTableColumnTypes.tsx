@@ -1,5 +1,3 @@
-// ── Типы колонок: select, date, datetime, boolean, number, array, json ───────
-
 import { useState } from "react";
 import { NativeTable } from "../src";
 import type { ColumnDef } from "../src/utils/types";
@@ -34,14 +32,13 @@ export function DataTableColumnTypes() {
 	const [data, setData] = useState(initialData);
 	return (
 		<div className="demo-panel">
-			<h3>Встроенные редакторы по типу колонки: select-выпадашка, date/datetime-пикер, чекбокс, массив, JSON</h3>
+			<h3>Встроенные редакторы: select, date, datetime, boolean, number, array, json</h3>
 			<NativeTable
 				data={data}
 				columns={columns}
 				onSave={(allRows) => setData(allRows as typeof initialData)}
-				style={{ maxHeight: 360 }}
+				style={{ maxHeight: 500 }}
 			/>
-			<p className="demo-note">Двойной клик по ячейке открывает редактор соответствующего типа. JSON редактируется как текст. Ctrl+S — сохранить и синхронизировать с data.</p>
 		</div>
 	);
 }

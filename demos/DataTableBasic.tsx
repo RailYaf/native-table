@@ -1,6 +1,3 @@
-// ── Basic: простейшая таблица ────────────────────────────────────────────────
-// Текстовые/числовые колонки, редактирование, добавление строк, сохранение.
-
 import { useState } from "react";
 import { NativeTable } from "../src";
 import type { ChangeItem } from "../src/utils/types";
@@ -25,21 +22,19 @@ export function DataTableBasic() {
 	const [log, setLog] = useState("");
 
 	const handleSave = (allRows: Record<string, unknown>[], changes: ChangeItem[]) => {
-		// В демо просто показываем изменения и применяем их к data
 		setLog(JSON.stringify(changes, null, 2));
 		setData(allRows as typeof initialData);
 	};
 
 	return (
 		<div className="demo-panel">
-			<h3>Редактируемая таблица: правка ячеек (двойной клик), Ctrl+Z/Y, Ctrl+S для сохранения</h3>
+			<h3>Редактирование ячеек, добавление строк, Ctrl+Z/Y, сохранение по Ctrl+S</h3>
 			<NativeTable
 				data={data}
 				columns={columns}
 				onSave={handleSave}
-				style={{ maxHeight: 340 }}
+				style={{ maxHeight: 500 }}
 			/>
-			<p className="demo-note">В таблице можно добавлять строки (стрелка вниз в последней строке) и менять ширину колонок перетаскиванием.</p>
 			{log && <div className="demo-log">onSave changes:\n{log}</div>}
 		</div>
 	);
