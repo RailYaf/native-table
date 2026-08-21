@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NativeSheet } from "./core/native-sheet";
-import { SaveIcon, UndoIcon, RedoIcon, PaintBucketIcon, TextColorIcon } from "./ui/icons";
+import { SaveIcon, UndoIcon, RedoIcon } from "./ui/icons";
 import { dataToCells, cellChangesToDataChanges, cellsToSaveRows, isTempRowId } from "./utils/data-convert";
 import { validateCell } from "./utils/validation";
 import { cellKey, colToLetter, parseCellKey } from "./utils/cell-addr";
@@ -33,7 +33,6 @@ export function NativeTable({
 	cell,
 	toolbar,
 	columnWidths,
-	cellStyles,
 	striped = false,
 	theme,
 	pagination,
@@ -87,10 +86,6 @@ export function NativeTable({
 	const [clientErrors, setClientErrors] = useState<ValidationError[]>([]);
 	const columnsRef = useRef(columns);
 	columnsRef.current = columns;
-
-	// Только hex: <input type="color"> не принимает CSS-переменные
-	const [lastBg, setLastBg] = useState("#c8e6c9");
-	const [lastFg, setLastFg] = useState("#000000");
 
 	const effectiveAllowAddRows = readOnly ? false : allowAddRows;
 
@@ -175,7 +170,6 @@ export function NativeTable({
 				onClearSortFilter,
 				rowIds: conv.rowIds,
 				columnWidths,
-				cellStyles,
 				sortFilter,
 				theme,
 				initialWarnings: warnMap,
@@ -296,10 +290,6 @@ export function NativeTable({
 	useEffect(() => {
 		if (sheetRef.current && columnWidths) sheetRef.current.setColumnWidths(columnWidths);
 	}, [columnWidths]);
-
-	useEffect(() => {
-		if (sheetRef.current && cellStyles) sheetRef.current.setCellStyles(cellStyles);
-	}, [cellStyles]);
 
 	// ── Ресайз контейнера: maxHeight извне меняется после mount → пересчитать окно ──
 	useEffect(() => {
@@ -483,23 +473,9 @@ export function NativeTable({
 				</div>
 			)}
 			<div className="nt-toolbar" onClick={onToolbar}>
-				{!readOnly && show("save") && <button className="nt-tb-btn nt-tb-save" data-action="save" disabled={hasErrors} data-tooltip="Сохранить (Ctrl+S)"><SaveIcon size={iconSize} /><span className="nt-tb-dot" /></button>}
-				{!readOnly && show("undo") && <button className="nt-tb-btn" data-action="undo" data-tooltip="Отменить (Ctrl+Z)"><UndoIcon size={iconSize} /></button>}
-				{!readOnly && show("redo") && <button className="nt-tb-btn" data-action="redo" data-tooltip="Вернуть (Ctrl+Y)"><RedoIcon size={iconSize} /></button>}
-				{show("background") && <label className="nt-tb-btn nt-tb-color-btn" data-tooltip="Цвет заливки">
-					<PaintBucketIcon size={iconSize} />
-					<span className="nt-tb-color-bar" style={{backgroundColor: lastBg}} />
-					<input type="color" className="nt-tb-color" value={lastBg}
-						onChange={(e) => { setLastBg(e.target.value); sheetRef.current?.setCellStyle({ background: e.target.value }); }}
-					/>
-				</label>}
-				{show("textColor") && <label className="nt-tb-btn nt-tb-color-btn" data-tooltip="Цвет текста">
-					<TextColorIcon size={iconSize} />
-					<span className="nt-tb-color-bar" style={{backgroundColor: lastFg}} />
-					<input type="color" className="nt-tb-color" value={lastFg}
-						onChange={(e) => { setLastFg(e.target.value); sheetRef.current?.setCellStyle({ color: e.target.value }); }}
-					/>
-				</label>}
+				{!readOnly && show("save") && <button className="nt-tb-btn nt-tb-save" data-action="save" disabled={hasErrors} data-tooltip="Сохранить (Ctrl+S)"><SaveIcon size={iconSize} /><span className="nt-tb-label">Сохранить</span><span className="nt-tb-dot" /></button>}
+				{!readOnly && show("undo") && <button className="nt-tb-btn" data-action="undo" data-tooltip="Отменить (Ctrl+Z)"><UndoIcon size={iconSize} /><span className="nt-tb-label">Отменить</span></button>}
+				{!readOnly && show("redo") && <button className="nt-tb-btn" data-action="redo" data-tooltip="Вернуть (Ctrl+Y)"><RedoIcon size={iconSize} /><span className="nt-tb-label">Вернуть</span></button>}
 			</div>
 			<div ref={ref} className={`nt-container nt-root${theme === "dark" ? " nt-dark" : ""}`} style={style} />
 			{pagination && (

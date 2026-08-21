@@ -6,25 +6,6 @@ import { NativeTable } from "../src";
 import { cellCenter, findCell, testColumns, testData } from "./helpers";
 
 describe("NativeTable: лейаут (onLayoutChange)", () => {
-	it("вызывает onLayoutChange при изменении стиля ячейки через тулбар", () => {
-		const onLayoutChange = vi.fn();
-		const { container } = render(
-			<NativeTable data={testData} columns={testColumns} onLayoutChange={onLayoutChange} />,
-		);
-
-		// Выделяем ячейку (0,0) и красим заливку красным
-		const cell = findCell(container, 0, 0);
-		fireEvent.mouseDown(cell, cellCenter(cell));
-		const bgInput = container.querySelectorAll<HTMLInputElement>(".nt-tb-color")[0];
-		fireEvent.change(bgInput, { target: { value: "#ff0000" } });
-
-		expect(onLayoutChange).toHaveBeenCalled();
-		const layout = onLayoutChange.mock.calls.at(-1)![0];
-		expect(layout.styles).toMatchObject({ "name|1": { background: "#ff0000" } });
-		// Ячейка сразу перекрашена
-		expect(findCell(container, 0, 0).style.backgroundColor).toBe("rgb(255, 0, 0)");
-	});
-
 	it("вызывает onLayoutChange при ресайзе колонки", () => {
 		const onLayoutChange = vi.fn();
 		const { container } = render(
@@ -68,19 +49,6 @@ describe("NativeTable: лейаут (onLayoutChange)", () => {
 		expect(onLayoutChange).toHaveBeenCalledTimes(1);
 	});
 
-	it("Ctrl+Z не отменяет заливку ячейки", () => {
-		const { container } = render(<NativeTable data={testData} columns={testColumns} />);
-
-		const cell = findCell(container, 0, 0);
-		fireEvent.mouseDown(cell, cellCenter(cell));
-		const bgInput = container.querySelectorAll<HTMLInputElement>(".nt-tb-color")[0];
-		fireEvent.change(bgInput, { target: { value: "#ff0000" } });
-		expect(findCell(container, 0, 0).style.backgroundColor).toBe("rgb(255, 0, 0)");
-
-		fireEvent.click(container.querySelector('[data-action="undo"]')!);
-		expect(findCell(container, 0, 0).style.backgroundColor).toBe("rgb(255, 0, 0)");
-	});
-
 	it("не вызывает onLayoutChange при обычном редактировании ячейки", () => {
 		const onLayoutChange = vi.fn();
 		const { container } = render(
@@ -108,18 +76,6 @@ describe("NativeTable: лейаут (onLayoutChange)", () => {
 		fireEvent.mouseMove(window, { clientX: 140 });
 		fireEvent.mouseUp(window);
 
-		expect(dot.style.display).toBe("none");
-	});
-
-	it("индикатор save не загорается при изменении заливки", () => {
-		const { container } = render(<NativeTable data={testData} columns={testColumns} />);
-
-		const cell = findCell(container, 0, 0);
-		fireEvent.mouseDown(cell, cellCenter(cell));
-		const bgInput = container.querySelectorAll<HTMLInputElement>(".nt-tb-color")[0];
-		fireEvent.change(bgInput, { target: { value: "#ff0000" } });
-
-		const dot = container.querySelector<HTMLElement>(".nt-tb-dot")!;
 		expect(dot.style.display).toBe("none");
 	});
 
@@ -157,18 +113,6 @@ describe("NativeTable: лейаут (onLayoutChange)", () => {
 
 		expect(undoBtn).toBeDisabled();
 		expect(redoBtn).toBeDisabled();
-	});
-
-	it("кнопки undo/redo не активируются при изменении заливки", () => {
-		const { container } = render(<NativeTable data={testData} columns={testColumns} />);
-
-		const cell = findCell(container, 0, 0);
-		fireEvent.mouseDown(cell, cellCenter(cell));
-		const bgInput = container.querySelectorAll<HTMLInputElement>(".nt-tb-color")[0];
-		fireEvent.change(bgInput, { target: { value: "#ff0000" } });
-
-		expect(container.querySelector('[data-action="undo"]')).toBeDisabled();
-		expect(container.querySelector('[data-action="redo"]')).toBeDisabled();
 	});
 
 	it("кнопки undo/redo отражают изменения данных", () => {

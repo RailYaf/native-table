@@ -1,4 +1,4 @@
-import type { ColumnDef, HeaderConfig, LayoutData, PaginationConfig, SortFilterSnapshot, ValidationError, CellStyle, ToolbarConfig, CellConfig, ChangeItem } from "./utils/types";
+import type { ColumnDef, HeaderConfig, LayoutData, PaginationConfig, SortFilterSnapshot, ValidationError, ToolbarConfig, CellConfig, ChangeItem } from "./utils/types";
 
 export type { ToolbarButton, ToolbarConfig } from "./utils/types";
 
@@ -41,8 +41,6 @@ export interface NativeTableProps {
 	cell?: CellConfig;
 	/** Настройки тулбара */
 	toolbar?: ToolbarConfig;
-	/** Заданные стили ячеек: ключ = columnName|rowId, значение = цвет текста + заливка */
-	cellStyles?: Record<string, CellStyle>;
 	/** Заданные ширины колонок: columnName → px */
 	columnWidths?: Record<string, number>;
 	/** Зебра — чередующаяся расцветка строк */

@@ -121,12 +121,10 @@ export type ChangeItem =
 	| { updatedRowId: string | number; columnName: string; value: ScalarCellValue }
 	| { deletedRowId: string | number };
 
-/** Данные лейаута для сохранения (ширины, стили) */
+/** Данные лейаута для сохранения */
 export interface LayoutData {
 	/** Ширины колонок: columnName → px */
 	widths: Record<string, number>;
-	/** Стили ячеек: columnName|rowId → стиль */
-	styles: Record<string, CellStyle>;
 }
 
 /** Ошибка валидации */
@@ -256,8 +254,6 @@ export interface NativeSheetOptions {
 	columns: ColumnDef[];
 	/** Заданные ширины колонок: columnName → px */
 	columnWidths?: Record<string, number>;
-	/** Заданные стили ячеек: columnName|rowId → стиль */
-	cellStyles?: Record<string, CellStyle>;
 	/** Начальные данные: A1-ключ ("C5") → ячейка */
 	initialData?: Record<string, Cell>;
 	/**

@@ -1,4 +1,4 @@
-// ── Тема и стилизация: dark theme, striped, cellStyles ──────────────────────
+// ── Тема и стилизация: dark theme, striped, цвета колонок ───────────────────
 
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
@@ -37,20 +37,6 @@ describe("NativeTable: тема и стили", () => {
 
 		const row0 = findCell(container, 0, 0).closest(".nt-row")!;
 		expect(row0.classList.contains("nt-row--striped")).toBe(false);
-	});
-
-	it("применяет cellStyles по ключу columnName|rowId", () => {
-		const { container } = render(
-			<NativeTable
-				data={testData}
-				columns={testColumns}
-				cellStyles={{ "name|1": { background: "#ff0000", color: "#00ff00" } }}
-			/>,
-		);
-
-		const cell = findCell(container, 0, 0);
-		expect(cell.style.backgroundColor).toBe("rgb(255, 0, 0)");
-		expect(cell.style.color).toBe("rgb(0, 255, 0)");
 	});
 
 	it("применяет цветовую функцию колонки к ячейкам", () => {

@@ -1,18 +1,32 @@
-// ── Стилизация ячеек: cellStyles, тулбар с цветом заливки/текста ───────────
+// ── Цвета колонок и сохранение ширин через onLayoutChange ───────────────────
 
 import { useState } from "react";
 import { NativeTable } from "../src";
-import type { CellStyle, ColumnDef, LayoutData } from "../src/utils/types";
+import type { ColumnDef, LayoutData } from "../src/utils/types";
 
 const columns: ColumnDef[] = [
 	{ name: "project", label: "Проект", width: 180 },
 	{ name: "manager", label: "Менеджер", width: 160 },
-	{ name: "progress", label: "Готовность, %", type: "number", width: 140 },
+	{ name: "progress", label: "Готовность, %", type: "number", width: 140,
+		color: (v) => {
+			const n = Number(v);
+			if (n >= 100) return "#1e7e34";
+			if (n < 30) return "#a94442";
+			return null;
+		},
+	},
 	{ name: "status", label: "Статус", type: "select", width: 140, options: [
 		{ value: "on-track", label: "В графике" },
 		{ value: "at-risk", label: "Под риском" },
 		{ value: "delayed", label: "Задерживается" },
-	] },
+	],
+	backgroundColor: (v) => {
+		switch (v) {
+			case "at-risk": return "#fff3cd";
+			case "delayed": return "#f8d7da";
+			default: return null;
+		}
+	} },
 ];
 
 const initialData = [
@@ -22,37 +36,27 @@ const initialData = [
 	{ id: 4, project: "Интеграция CRM", manager: "Козлова", progress: 15, status: "delayed" },
 ];
 
-// Стили, сохранённые ранее (ключ: columnName|rowId)
-const initialStyles: Record<string, CellStyle> = {
-	"status|2": { background: "#fff3cd", color: "#8a6d00" },
-	"status|4": { background: "#f8d7da", color: "#a94442" },
-	"progress|1": { background: "#d4edda", color: "#1e7e34" },
-};
-
 export function DataTableStyling() {
-	const [cellStyles, setCellStyles] = useState(initialStyles);
 	const [widths, setWidths] = useState<Record<string, number>>({});
 	const [log, setLog] = useState("");
 
 	const handleLayout = (layout: LayoutData) => {
 		// Персистенция лейаута: в реальном приложении — сохранение в IndexedDB/на сервер
 		setWidths(layout.widths);
-		setCellStyles(layout.styles);
 	};
 
 	return (
 		<div className="demo-panel">
-			<h3>Тулбар с заливкой и цветом текста, сохранение лейаута через onLayoutChange</h3>
+			<h3>Цвета колонок (color/backgroundColor) и сохранение ширин через onLayoutChange</h3>
 			<NativeTable
 				data={initialData}
 				columns={columns}
-				cellStyles={cellStyles}
 				columnWidths={widths}
 				onLayoutChange={handleLayout}
 				onSave={(_, changes) => setLog(JSON.stringify(changes, null, 2))}
 				style={{ maxHeight: 300 }}
 			/>
-			<p className="demo-note">Выделите ячейку и выберите цвет в тулбаре — стиль попадёт в onLayoutChange и «переживёт» перерисовку. Правки данных сохраняются через Ctrl+S.</p>
+			<p className="demo-note">Цвет текста и заливка зависят от значения ячейки (задаются функциями на колонке). Ширины колонок меняются перетаскиванием и попадают в onLayoutChange. Правки данных сохраняются через Ctrl+S.</p>
 			{log && <div className="demo-log">onSave changes:\n{log}</div>}
 		</div>
 	);

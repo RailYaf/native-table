@@ -159,7 +159,6 @@ export class NativeSheet {
 			}
 			this.renderer.updateContainerSizes();
 		}
-		if (options.cellStyles) this.applyStoredStyles(options.cellStyles);
 
 		if (options.serverSide && options.sortFilter) {
 			const sf = options.sortFilter;
@@ -271,16 +270,8 @@ export class NativeSheet {
 
 	/** Заменить данные, сохранив пользовательские стили непустых ячеек. */
 	setData(data: Record<string, Cell>): void {
-		const hasPagination = !!this.options.pagination;
-		const oldStyles = hasPagination ? {} : this.collectStyles();
 		this.model = new SheetModel(data);
 		this.model.onChange = this.options.onChange;
-		for (const [key, style] of Object.entries(oldStyles)) {
-			const cell = this.model.getByKey(key);
-			if (cell && cell.value !== null && cell.value !== undefined) {
-				this.model.setSilentByKey(key, { ...cell, style });
-			}
-		}
 		this.editor.setModel(this.model);
 		this.renderer.setModel(this.model);
 		this.view.setModel(this.model);
@@ -295,7 +286,7 @@ export class NativeSheet {
 		this.undoManager.clear();
 
 		// Пагинация: управляем auto-expand и клипим строки
-		if (hasPagination && this.options.pagination) {
+		if (this.options.pagination) {
 			const { page, pageSize, total } = this.options.pagination;
 			const isLastPage = (page + 1) * pageSize >= total;
 			this.renderer.allowAddRows = isLastPage ? (this.options.allowAddRows ?? true) : false;
@@ -333,15 +324,6 @@ export class NativeSheet {
 		this.renderer.updateContainerSizes();
 		this.renderer.render(true);
 		// Ширины изменились — рамка выделения должна пересчитаться
-		this.refreshOverlay();
-	}
-
-	/** Применить сохранённые стили ячеек (columnName|rowId → стиль) после создания таблицы. */
-	setCellStyles(styles: Record<string, CellStyle>): void {
-		this.applyStoredStyles(styles);
-		// Полный рендер: refreshValues не перерисовывает fixed-слои,
-		// а именно там обычно и находятся стилизованные колонки
-		this.renderer.render(true);
 		this.refreshOverlay();
 	}
 
@@ -449,8 +431,6 @@ export class NativeSheet {
 		this.undoManager.clear();
 		this.updateToolbar();
 	}
-
-	setCellStyle(style: Partial<CellStyle>): void { this.applyStyle(style); }
 
 	// ──────────────────────────────────────────────────────────────────────────
 	// Выделение и координаты
@@ -1369,98 +1349,6 @@ export class NativeSheet {
 		}
 	}
 
-	// ──────────────────────────────────────────────────────────────────────────
-	// Стили
-	// ──────────────────────────────────────────────────────────────────────────
-
-	/** Применить стиль ко всем выделенным ячейкам (слияние с существующим). */
-	private applyStyle(style: Partial<CellStyle>): void {
-		if (this.selectionHasNewRow()) return;
-		const b = this.bounds();
-		if (!b) return;
-
-		const changed: CellChanges = {};
-		for (let r = b.sr; r <= b.er; r++) {
-			const dr = this.toDataRow(r);
-			for (let c = b.sc; c <= b.ec; c++) {
-				const old = this.model.get(dr, c);
-				const next: Cell = { ...old, style: { ...old.style, ...style } };
-				this.model.setSilent(dr, c, next);
-				// Заливка/цвет текста не попадают в undo-историю
-				changed[cellKey(dr, c)] = { old: { ...old }, new: { ...next } };
-			}
-		}
-
-		this.updateToolbar();
-		this.model.emit("edit", changed);
-		this.renderer.refreshValues();
-		this.emitLayout();
-	}
-
-	/** Новая строка — без реального rowId из базы. */
-	private isNewRow(dataRow: number): boolean {
-		const rowId = this.options.rowIds?.[dataRow];
-		if (rowId === undefined || rowId === null) return true;
-		return typeof rowId === "string" && rowId.startsWith("new_");
-	}
-
-	/** Есть ли в текущем выделении новые строки. */
-	private selectionHasNewRow(): boolean {
-		const b = this.bounds();
-		if (!b) return false;
-		for (let r = b.sr; r <= b.er; r++) {
-			if (this.isNewRow(this.toDataRow(r))) return true;
-		}
-		return false;
-	}
-
-	/** Собрать стили всех ячеек с пользовательскими стилями: A1-ключ → CellStyle. */
-	private collectStyles(): Record<string, CellStyle> {
-		const result: Record<string, CellStyle> = {};
-		for (const [key, cell] of Object.entries(this.model.getAll())) {
-			if (cell.style && Object.values(cell.style).some((v) => v !== undefined)) {
-				result[key] = cell.style;
-			}
-		}
-		return result;
-	}
-
-	/** Преобразовать A1-ключ в формат columnName|rowId (ключ хранения лейаута). */
-	private a1ToStorageKey(a1Key: string): string | null {
-		const parsed = parseCellKey(a1Key);
-		if (!parsed) return null;
-		const colName = this.renderer.getColumn(parsed.col)?.name ?? String(parsed.col);
-		const rowId = this.getOrCreateRowId(parsed.row);
-		return `${colName}|${rowId}`;
-	}
-
-	/** Преобразовать ключ columnName|rowId обратно в A1-формат. */
-	private storageToA1Key(storageKey: string): string | null {
-		const pipe = storageKey.lastIndexOf("|");
-		if (pipe < 0) return null;
-		const name = storageKey.slice(0, pipe);
-		const rowStr = storageKey.slice(pipe + 1);
-		const colIdx = this.renderer.colIndexByName(name);
-		if (colIdx < 0) return null;
-		// Реальный rowId
-		let rowIdx = this.rowIdToIndex.get(rowStr);
-		if (rowIdx !== undefined && rowIdx >= 0) return cellKey(rowIdx, colIdx);
-		// Временный ID (0000...) — ищем в _tempRowIds
-		for (const [r, tid] of this._tempRowIds) {
-			if (tid === rowStr) return cellKey(r, colIdx);
-		}
-		return null;
-	}
-
-	/** Применить сохранённые стили лейаута (columnName|rowId → стиль) к ячейкам модели. */
-	private applyStoredStyles(styles: Record<string, CellStyle>): void {
-		for (const [key, style] of Object.entries(styles)) {
-			const a1Key = this.storageToA1Key(key);
-			if (!a1Key) continue;
-			const cell = this.model.getByKey(a1Key) ?? { value: null };
-			this.model.setSilentByKey(a1Key, { ...cell, style: { ...cell.style, ...style } });
-		}
-	}
 
 	// ──────────────────────────────────────────────────────────────────────────
 	// История
@@ -1526,20 +1414,14 @@ export class NativeSheet {
 		if (undoBtn) undoBtn.disabled = !this.undoManager.canUndo;
 		if (redoBtn) redoBtn.disabled = !this.undoManager.canRedo;
 		if (dot) dot.style.display = this.undoManager.hasDataChanges ? "block" : "none";
-
-		// Блокируем заливку/цвет текста для новых строк
-		const hasNew = this.selectionHasNewRow();
-		for (const el of Array.from(root.querySelectorAll<HTMLLabelElement>(".nt-tb-color-btn"))) {
-			el.toggleAttribute("data-disabled", hasNew);
-		}
 	}
 
-	/** Уведомить адаптер об изменении лейаута (ширины колонок / стили ячеек). */
+	/** Уведомить адаптер об изменении лейаута (ширины колонок). */
 	private emitLayout(): void {
 		this.options.onLayoutChange?.(this.collectLayout());
 	}
 
-	/** Собрать данные лейаута (ширины, стили) для onLayoutChange. */
+	/** Собрать данные лейаута (ширины колонок) для onLayoutChange. */
 	private collectLayout(): LayoutData {
 		const widths: Record<string, number> = {};
 		const limit = this.renderer.dataColCount;
@@ -1550,15 +1432,7 @@ export class NativeSheet {
 			const name = this.renderer.getColumn(c)?.name ?? String(c);
 			widths[name] = this.renderer.getColWidth(c);
 		}
-
-		const a1Styles = this.collectStyles();
-		const styles: Record<string, import("../utils/types").CellStyle> = {};
-		for (const [a1Key, cellStyle] of Object.entries(a1Styles)) {
-			const storageKey = this.a1ToStorageKey(a1Key);
-			if (storageKey) styles[storageKey] = cellStyle;
-		}
-
-		return { widths, styles };
+		return { widths };
 	}
 
 	// ──────────────────────────────────────────────────────────────────────────

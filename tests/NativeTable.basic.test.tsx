@@ -114,6 +114,16 @@ describe("NativeTable: базовые сценарии", () => {
 		expect(container.textContent).toContain("Нет данных");
 	});
 
+	it("кнопки тулбара имеют подписи, цветовые кнопки убраны", () => {
+		const { container } = render(<NativeTable data={testData} columns={testColumns} />);
+
+		expect(container.querySelector('[data-action="save"]')!.textContent).toContain("Сохранить");
+		expect(container.querySelector('[data-action="undo"]')!.textContent).toContain("Отменить");
+		expect(container.querySelector('[data-action="redo"]')!.textContent).toContain("Вернуть");
+		expect(container.querySelector(".nt-tb-color")).toBeNull();
+		expect(container.querySelector(".nt-tb-color-btn")).toBeNull();
+	});
+
 	it("показывает загрузку при loading", () => {
 		const { container } = render(<NativeTable data={testData} columns={testColumns} loading />);
 		expect(container.textContent).toContain("Загрузка");
