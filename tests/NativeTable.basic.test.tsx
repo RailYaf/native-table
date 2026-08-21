@@ -28,7 +28,7 @@ describe("NativeTable: базовые сценарии", () => {
 		editCell(findCell(container, 1, 0), "Beta 2.0");
 
 		expect(onChange).toHaveBeenCalled();
-		const [allRows, changes] = onChange.mock.calls.at(-1)!;
+		const [allRows, changes] = onChange.mock.calls[onChange.mock.calls.length - 1];
 		expect(changes).toEqual([
 			{ updatedRowId: 2, columnName: "name", value: "Beta 2.0" },
 		]);
@@ -42,7 +42,7 @@ describe("NativeTable: базовые сценарии", () => {
 
 		editCell(findCell(container, 0, 1), "123.5");
 
-		const [, changes] = onChange.mock.calls.at(-1)!;
+		const [, changes] = onChange.mock.calls[onChange.mock.calls.length - 1];
 		expect(changes).toEqual([
 			{ updatedRowId: 1, columnName: "price", value: 123.5 },
 		]);
@@ -56,7 +56,7 @@ describe("NativeTable: базовые сценарии", () => {
 		fireEvent.mouseDown(checkbox);
 		fireEvent.click(checkbox);
 
-		const [, changes] = onChange.mock.calls.at(-1)!;
+		const [, changes] = onChange.mock.calls[onChange.mock.calls.length - 1];
 		expect(changes).toEqual([
 			{ updatedRowId: 2, columnName: "active", value: true },
 		]);
@@ -103,7 +103,7 @@ describe("NativeTable: базовые сценарии", () => {
 		// 4-я строка — фантом (после 3 строк данных)
 		editCell(findCell(container, 3, 0), "Delta");
 
-		const [, changes] = onChange.mock.calls.at(-1)!;
+		const [, changes] = onChange.mock.calls[onChange.mock.calls.length - 1];
 		expect(changes).toHaveLength(1);
 		expect(changes[0]).toMatchObject({ columnName: "name", value: "Delta" });
 		expect(String(changes[0].updatedRowId)).toMatch(/^new_/);
@@ -129,10 +129,10 @@ describe("NativeTable: базовые сценарии", () => {
 		expect(changes).toHaveLength(1);
 		expect(changes[0]).toMatchObject({ columnName: "name", value: "Delta" });
 		expect(String(changes[0].createdRowId)).toMatch(/^new_/);
-		expect(changes.some((c) => "deletedRowId" in c)).toBe(false);
+		expect(changes.some((c: Record<string, unknown>) => "deletedRowId" in c)).toBe(false);
 
 		// id новой строки в onSave совпадает с id из onChange
-		const [, onChangeChanges] = onChange.mock.calls.at(-1)! as [unknown, Array<{ updatedRowId?: string | number }>];
+		const [, onChangeChanges] = onChange.mock.calls[onChange.mock.calls.length - 1] as [unknown, Array<{ updatedRowId?: string | number }>];
 		expect((changes[0] as { createdRowId?: string | number }).createdRowId).toBe(onChangeChanges[0].updatedRowId);
 	});
 
@@ -184,7 +184,7 @@ describe("NativeTable: базовые сценарии", () => {
 		fireEvent.keyDown(root, { key: "c", ctrlKey: true, code: "KeyC" });
 		fireEvent.mouseDown(findCell(container, 1, 1), cellCenter(findCell(container, 1, 1)));
 		fireEvent.paste(document);
-		const boolChange = onChange.mock.calls.at(-1)![1][0] as { columnName: string; value: unknown };
+		const boolChange = onChange.mock.calls[onChange.mock.calls.length - 1][1][0] as { columnName: string; value: unknown };
 		expect(boolChange.columnName).toBe("active");
 		expect(boolChange.value).toBe(true);
 
@@ -194,7 +194,7 @@ describe("NativeTable: базовые сценарии", () => {
 		fireEvent.keyDown(root, { key: "c", ctrlKey: true, code: "KeyC" });
 		fireEvent.mouseDown(findCell(container, 1, 2), cellCenter(findCell(container, 1, 2)));
 		fireEvent.paste(document);
-		const selectChange = onChange.mock.calls.at(-1)![1][0] as { columnName: string; value: unknown };
+		const selectChange = onChange.mock.calls[onChange.mock.calls.length - 1][1][0] as { columnName: string; value: unknown };
 		expect(selectChange.columnName).toBe("status");
 		expect(selectChange.value).toBe("done");
 		// Отображается подпись, а не сырое значение

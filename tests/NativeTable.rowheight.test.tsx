@@ -14,7 +14,7 @@ function patchScrollHeight() {
 }
 
 afterAll(() => {
-	delete (HTMLElement.prototype as Record<string, unknown>).scrollHeight;
+	delete (HTMLElement.prototype as unknown as Record<string, unknown>).scrollHeight;
 });
 
 describe("undo/redo: пересчёт высоты строки и колонки номеров", () => {

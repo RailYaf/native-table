@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import { NativeTable } from "../src";
+import type { ColumnDef } from "../src/utils/types";
 import { findCell, testColumns, testData } from "./helpers";
 
 describe("NativeTable: тема и стили", () => {
@@ -40,11 +41,11 @@ describe("NativeTable: тема и стили", () => {
 	});
 
 	it("применяет цветовую функцию колонки к ячейкам", () => {
-		const columns = [
+		const columns: ColumnDef[] = [
 			{ name: "name", label: "Имя", width: 120 },
 			{
 				name: "price", label: "Цена", type: "number" as const, width: 100,
-				color: (v: string | number | boolean | null) => (Number(v) > 150 ? "#ff0000" : null),
+				color: (v) => (Number(v) > 150 ? "#ff0000" : null),
 			},
 		];
 		const { container } = render(<NativeTable data={testData} columns={columns} />);

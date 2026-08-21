@@ -22,7 +22,7 @@ describe("NativeTable: лейаут (onLayoutChange)", () => {
 		fireEvent.mouseUp(window);
 
 		expect(onLayoutChange).toHaveBeenCalled();
-		const layout = onLayoutChange.mock.calls.at(-1)![0];
+		const layout = onLayoutChange.mock.calls[onLayoutChange.mock.calls.length - 1][0];
 		expect(layout.widths.name).toBe(widthBefore + 40);
 	});
 
