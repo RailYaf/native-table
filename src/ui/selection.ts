@@ -54,7 +54,9 @@ export class SelectionOverlay {
 		this.range.style.top = `${top}px`;
 		this.range.style.width = `${right - left}px`;
 		this.range.style.height = `${bottom - top}px`;
-		this.range.style.display = "block";
+		// Во время редактирования рамка скрыта — render() дёргает update()
+		// через onScrollCallback и мог вернуть её поверх прозрачного триггера
+		this.range.style.display = this.editing ? "none" : "block";
 		// Убрать border на стыке с фиксированными слоями
 		const {
 			fixedLeftCols, fixedLeftCompact, currentStuckCount,

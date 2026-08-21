@@ -655,6 +655,7 @@ export class NativeSheet {
 		const colDef = this.renderer.getColumn(found.col);
 		if (isBoolean(colDef)) return;
 		this.editor.start(found.row, found.col, colDef, "", false);
+		this.renderer.editingCell = { row: found.row, col: found.col };
 		this.setEditing(true);
 	}
 
@@ -719,6 +720,7 @@ export class NativeSheet {
 			startEdit: (row, col, initial) => {
 				if (!this.canEdit(row, col)) return;
 				this.editor.start(row, col, this.renderer.getColumn(col), initial ?? "", false);
+				this.renderer.editingCell = { row, col };
 				this.setEditing(true);
 			},
 			commitEdit: () => this.editor.commit(),
@@ -817,6 +819,7 @@ export class NativeSheet {
 
 	/** Переключить состояние «редактирование»: скрыть fill-handle и ручки ресайза, заблокировать фильтры. */
 	private setEditing(on: boolean): void {
+		if (!on) this.renderer.editingCell = null;
 		this.overlay.setEditing(on);
 		this.renderer.setEditing(on);
 		this.container.classList.toggle("nt-editing", on);

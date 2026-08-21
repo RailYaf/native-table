@@ -141,6 +141,8 @@ export class Renderer {
 	private fixedRightRange: HTMLDivElement | null = null;
 	/** Режим редактирования ячейки: прячет рамку выделения и в fixed-слоях */
 	private editing = false;
+	/** Ячейка под редактором (display-координаты): у неё не рисуем заливку */
+	editingCell: { row: number; col: number } | null = null;
 
 	/**
 	 * Создать рендерер: строит DOM-каркас таблицы (шапка, тело, fixed-слои,
@@ -941,7 +943,7 @@ export class Renderer {
 				el.classList.toggle("nt-cell--disabled", this.disabledRows.has(this.rowIdAt(dr)));
 				el.classList.toggle("nt-cell--readonly", !this.readOnly && !!colDef?.readOnly);
 				el.style.cursor = this.readOnly ? "default" : "";
-				renderCellContent(el, this.model.get(dr, c), colDef, this.cellConfig);
+				renderCellContent(el, this.model.get(dr, c), colDef, this.cellConfig, this.editingCell);
 				this.updateCellError(el, c, dr);
 			}
 			for (let ci = cols.length; ci < p.cells.length; ci++) {
@@ -1282,7 +1284,7 @@ export class Renderer {
 			for (let ci = 0; ci < pool.cells.length; ci++) {
 				const c = this.currentStartCol + ci;
 				if (c > this.currentEndCol) break;
-				renderCellContent(pool.cells[ci], this.model.get(dr, c), this.columns[c], this.cellConfig);
+				renderCellContent(pool.cells[ci], this.model.get(dr, c), this.columns[c], this.cellConfig, this.editingCell);
 				this.updateCellError(pool.cells[ci], c, dr);
 			}
 		}
@@ -1324,7 +1326,7 @@ export class Renderer {
 			if (cellEl.style.display === "none") continue;
 			const c = Number(cellEl.dataset.col);
 			if (Number.isNaN(c)) continue;
-			renderCellContent(cellEl, this.model.get(dr, c), this.columns[c], this.cellConfig);
+			renderCellContent(cellEl, this.model.get(dr, c), this.columns[c], this.cellConfig, this.editingCell);
 			this.updateCellError(cellEl, c, dr);
 		}
 	}
@@ -1622,7 +1624,7 @@ export class Renderer {
 			el.classList.toggle("nt-cell--disabled", isDisabledRow);
 			el.classList.toggle("nt-cell--readonly", isReadOnlyCol);
 			el.style.cursor = this.readOnly ? "default" : "";
-			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef, this.cellConfig);
+			renderCellContent(el, this.model.get(this.dataRow(row), c), colDef, this.cellConfig, this.editingCell);
 			// Индикатор ошибки валидации
 			this.updateCellError(el, c, this.dataRow(row));
 		}
@@ -1935,10 +1937,20 @@ function renderCellContent(
 	cell: Cell,
 	colDef?: ColumnDef,
 	cellConfig?: import("../utils/types").CellConfig,
+	editingCell?: { row: number; col: number } | null,
 ): void {
 	// Применить стили ячейки: пользовательский (тулбар) побеждает цвет колонки
 	const style = cell.style;
-	el.style.backgroundColor = style?.background ?? resolveColumnColor(colDef?.backgroundColor, cell.value) ?? "";
+	// Ячейка под редактором: заливку не рисуем — белый фон, как у остальных
+	// редакторов (сквозь прозрачный select-триггер просвечивали заливка и
+	// зелёная подсветка выделения)
+	const isEdited = !!editingCell
+		&& el.dataset.row !== undefined
+		&& Number(el.dataset.row) === editingCell.row
+		&& Number(el.dataset.col) === editingCell.col;
+	el.style.backgroundColor = isEdited
+		? ""
+		: style?.background ?? resolveColumnColor(colDef?.backgroundColor, cell.value) ?? "";
 	el.style.color = style?.color ?? resolveColumnColor(colDef?.color, cell.value) ?? "";
 	// Выравнивание из дефолта колонки (flex-контейнеру нужен justify-content)
 	const align = colDef ? getCellAlign(colDef) : undefined;
