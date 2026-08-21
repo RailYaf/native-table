@@ -80,6 +80,17 @@
 
 /* ── Стили ────────────────────────────────────────────────────────────────── */
 
+/* Базовый шрифт таблицы и всех её попапов (живут в body, не наследуют) */
+.nt-table-wrapper,
+.nt-container,
+.nt-sort-filter-popup,
+.nt-sf-child-popup,
+.nt-context-menu,
+.nt-error-popup,
+.nt-sf-mask-tooltip {
+	font-family: Calibri, "Segoe UI", Arial, sans-serif;
+}
+
 .nt-container {
 	position: relative;
 	overflow: hidden;
@@ -88,7 +99,6 @@
 	max-height: 500px;
 	display: flex;
 	flex-direction: column;
-	font-family: Calibri, "Segoe UI", Arial, sans-serif;
 	font-size: 14px;
 	background: var(--nt-bg);
 	outline: none;
@@ -104,6 +114,8 @@
 	flex-direction: column;
 	flex: 1;
 	min-height: 0;
+	font-size: 14px;
+	color: var(--nt-text);
 }
 
 .nt-toolbar {
@@ -327,8 +339,8 @@
 	padding: 12px;
 	width: max-content;
 	z-index: 1002;
-	font-family: Calibri, "Segoe UI", Arial, sans-serif;
 	font-size: 14px;
+	color: var(--nt-text);
 }
 
 /* Строки: курсор-стрелка вправо */
@@ -555,6 +567,8 @@
 	white-space: pre-wrap;
 	word-break: break-word;
 	overflow-wrap: break-word;
+	color: #333;
+	background: #fff;
 }
 
 /* Кастомный select дропдаун */
@@ -1009,8 +1023,8 @@
 	box-shadow: var(--nt-shadow-sm);
 	padding: 4px 0;
 	min-width: 220px;
-	font-family: Calibri, "Segoe UI", Arial, sans-serif;
 	font-size: 14px;
+	color: var(--nt-text);
 }
 
 .nt-context-menu-item {
@@ -1044,8 +1058,8 @@
 	max-width: 360px;
 	max-height: 400px;
 	overflow-y: auto;
-	font-family: Calibri, "Segoe UI", Arial, sans-serif;
 	font-size: 14px;
+	color: var(--nt-text);
 }
 .nt-sort-filter-popup .nt-sf-radio {
 	overflow: hidden;
