@@ -1,7 +1,7 @@
 {
   "name": "@rshb/native-table",
   "version": "1.0.0",
-  "description": "Native spreadsheet component (Excel/Google Sheets clone)",
+  "description": "Native spreadsheet component",
   "main": "src/index.tsx",
   "types": "src/index.tsx",
   "files": [

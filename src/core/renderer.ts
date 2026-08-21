@@ -1315,6 +1315,7 @@ export class Renderer {
 		for (const pool of this.fixedRightRows) {
 			this.refreshFixedPoolRowHeight(pool);
 		}
+		this.refreshRowHeader();
 		this.onScrollCallback?.();
 	}
 
@@ -1904,6 +1905,20 @@ export class Renderer {
 		}
 		for (let i = needed; i < this.headerCol.children.length; i++) {
 			(this.headerCol.children[i] as HTMLDivElement).style.display = "none";
+		}
+	}
+
+	/** Обновить позиции/высоты ячеек колонки номеров строк после изменения авто-высот. */
+	private refreshRowHeader(): void {
+		const st = this.bodyDiv.scrollTop;
+		for (const el of Array.from(this.headerCol.children)) {
+			const cell = el as HTMLDivElement;
+			if (cell.style.display === "none") continue;
+			const r = Number(cell.dataset.row);
+			if (Number.isNaN(r)) continue;
+			cell.style.top = `${this.rowTop(r) - st}px`;
+			const h = this.getRowHeight(r);
+			cell.style.height = `${h}px`;
 		}
 	}
 }
