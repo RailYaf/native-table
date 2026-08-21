@@ -1,7 +1,12 @@
 # NativeTable
 
-Нативная React-таблица в стиле Excel / Google Sheets: виртуализация строк и столбцов,
-встроенные редакторы по типам колонок, валидация, пагинация, undo/redo, темы.
+Таблица в стиле Excel / Google Sheets, реализованная на нативном DOM без сторонних
+UI-библиотек: виртуализация строк и столбцов, встроенные редакторы по типам колонок,
+валидация, пагинация, undo/redo, темы.
+
+React — только обёртка (`NativeTable`): весь движок (`NativeSheet`, рендерер, модель,
+представление, редактор, undo) — это нативные классы на чистом TypeScript/DOM.
+Ядро можно использовать и без React напрямую через `NativeSheet`.
 
 ## Возможности
 
@@ -60,66 +65,66 @@ const data = [
 
 ### `NativeTableProps`
 
-| Проп | Тип | По умолчанию | Описание |
-| --- | --- | --- | --- |
-| `data` | `Record<string, unknown>[]` | `[]` | Массив строк. Каждая должна иметь поле-идентификатор |
-| `columns` | `ColumnDef[]` | — | Описание колонок (обязательный) |
-| `rowKey` | `string` | `"id"` | Имя поля-идентификатора строки в `data` |
-| `className` | `string` | — | Класс враппера таблицы |
-| `style` | `CSSProperties` | — | Стили контейнера (обычно `maxHeight`) |
-| `onChange` | `(allRows, changes) => void` | — | Вызывается при любом изменении данных |
-| `onSave` | `(allRows, changes) => void` | — | Сохранение: Ctrl+S или кнопка. `changes` — гранулярные изменения |
-| `onLayoutChange` | `(layout: LayoutData) => void` | — | Изменение ширин колонок (для персистенции лейаута) |
-| `loading` | `boolean` | `false` | Спиннер загрузки |
-| `disabledRows` | `number[]` | `[]` | id строк, запрещённых к редактированию |
-| `validationErrors` | `ValidationError[]` | — | Внешние ошибки валидации (`rowId`, `columnName`, `message`) |
-| `validationWarnings` | `ValidationError[]` | — | Предупреждения (жёлтый индикатор) |
-| `allowAddRows` | `boolean` | `true` | Добавление новых строк внизу таблицы |
-| `readOnly` | `boolean` | `false` | Полный запрет редактирования, тулбар скрыт |
-| `resizableColumns` | `boolean` | `true` | Изменение ширины колонок перетаскиванием |
-| `header` | `HeaderConfig` | — | `ellipsis` — обрезка заголовков, `layout` — позиции label/иконки |
-| `cell` | `CellConfig` | — | `ellipsis`, `capLines` — обрезка текста ячеек |
-| `hiddenToolbarActions` | `ToolbarButton[]` | — | Кнопки тулбара для скрытия: `"save"`, `"undo"`, `"redo"` |
-| `columnWidths` | `Record<string, number>` | — | Сохранённые ширины колонок (`columnName → px`) |
-| `striped` | `boolean` | `false` | Зебра — чередующаяся расцветка строк |
-| `theme` | `"light" \| "dark"` | `"light"` | Тема таблицы |
-| `serverSide` | `boolean` | `false` | Сортировка/фильтрация на сервере |
-| `onApplySortFilter` | `(snapshot: SortFilterSnapshot) => void` | — | Применение сортировки/фильтра (при `serverSide`) |
-| `onClearSortFilter` | `(snapshot: SortFilterSnapshot) => void` | — | Сброс сортировки/фильтра (при `serverSide`) |
-| `sortFilter` | `SortFilterSnapshot` | — | Текущее состояние сортировки/фильтра (индикаторы в шапке) |
-| `pagination` | `PaginationConfig` | — | Конфигурация server-side пагинации |
+| Проп | Тип | Обязательный | По умолчанию | Описание |
+| --- | --- | --- | --- | --- |
+| `data` | `Record<string, unknown>[]` | нет | `[]` | Массив строк. Каждая должна иметь поле-идентификатор |
+| `columns` | `ColumnDef[]` | да | — | Описание колонок |
+| `rowKey` | `string` | нет | `"id"` | Имя поля-идентификатора строки в `data` |
+| `className` | `string` | нет | — | Класс враппера таблицы |
+| `style` | `CSSProperties` | нет | — | Стили контейнера (обычно `maxHeight`) |
+| `onChange` | `(allRows, changes) => void` | нет | — | Вызывается при любом изменении данных |
+| `onSave` | `(allRows, changes) => void` | нет | — | Сохранение: Ctrl+S или кнопка. `changes` — гранулярные изменения |
+| `onLayoutChange` | `(layout: LayoutData) => void` | нет | — | Изменение ширин колонок (для персистенции лейаута) |
+| `loading` | `boolean` | нет | `false` | Спиннер загрузки |
+| `disabledRows` | `number[]` | нет | `[]` | id строк, запрещённых к редактированию |
+| `validationErrors` | `ValidationError[]` | нет | — | Внешние ошибки валидации (`rowId`, `columnName`, `message`) |
+| `validationWarnings` | `ValidationError[]` | нет | — | Предупреждения (жёлтый индикатор) |
+| `allowAddRows` | `boolean` | нет | `true` | Добавление новых строк внизу таблицы |
+| `readOnly` | `boolean` | нет | `false` | Полный запрет редактирования, тулбар скрыт |
+| `resizableColumns` | `boolean` | нет | `true` | Изменение ширины колонок перетаскиванием |
+| `header` | `HeaderConfig` | нет | — | `ellipsis` — обрезка заголовков, `layout` — позиции label/иконки |
+| `cell` | `CellConfig` | нет | — | `ellipsis`, `capLines` — обрезка текста ячеек |
+| `hiddenToolbarActions` | `ToolbarButton[]` | нет | — | Кнопки тулбара для скрытия: `"save"`, `"undo"`, `"redo"` |
+| `columnWidths` | `Record<string, number>` | нет | — | Сохранённые ширины колонок (`columnName → px`) |
+| `striped` | `boolean` | нет | `false` | Зебра — чередующаяся расцветка строк |
+| `theme` | `"light" \| "dark"` | нет | `"light"` | Тема таблицы |
+| `serverSide` | `boolean` | нет | `false` | Сортировка/фильтрация на сервере |
+| `onApplySortFilter` | `(snapshot: SortFilterSnapshot) => void` | нет | — | Применение сортировки/фильтра (при `serverSide`) |
+| `onClearSortFilter` | `(snapshot: SortFilterSnapshot) => void` | нет | — | Сброс сортировки/фильтра (при `serverSide`) |
+| `sortFilter` | `SortFilterSnapshot` | нет | — | Текущее состояние сортировки/фильтра (индикаторы в шапке) |
+| `pagination` | `PaginationConfig` | нет | — | Конфигурация server-side пагинации |
 
 ### `ColumnDef`
 
-| Поле | Тип | Описание |
-| --- | --- | --- |
-| `name` | `string` | Уникальное имя колонки — ключ значений в `data` |
-| `label` | `string` | Заголовок колонки |
-| `type` | `ColumnType` | `"text" \| "number" \| "boolean" \| "select" \| "date" \| "datetime" \| "array" \| "json"` (default: `"text"`) |
-| `width` | `number` | Ширина в px. Без неё колонки делят свободное место поровну |
-| `color` | `string \| (value) => string \| null` | Цвет текста ячеек |
-| `backgroundColor` | `string \| (value) => string \| null` | Цвет заливки ячеек |
-| `readOnly` | `boolean` | Колонка только для чтения |
-| `align` | `"left" \| "center" \| "right"` | Выравнивание (default: right для number, center для boolean) |
-| `options` | `SelectOption[]` | Пункты для `type: "select"` |
-| `decimals` | `number` | Знаков после запятой для `number` |
-| `subtype` | `"text" \| "number"` | Тип элементов для `type: "array"` |
-| `children` | `ColumnDef[]` | Вложенные колонки — многоуровневая шапка |
-| `visible` | `boolean` | Скрыть колонку |
-| `nullable` | `boolean` | Разрешить `null` (для boolean — третье состояние) |
-| `default` | `ScalarCellValue` | Значение по умолчанию для новых строк |
-| `validationRules` | `ValidationRules` | Клиентская валидация |
-| `fixed` | `"left" \| "right"` | Зафиксировать колонку при горизонтальном скролле |
+| Поле | Тип | Обязательный | Описание |
+| --- | --- | --- | --- |
+| `name` | `string` | да | Уникальное имя колонки — ключ значений в `data` |
+| `label` | `string` | нет | Заголовок колонки |
+| `type` | `ColumnType` | нет | `"text" \| "number" \| "boolean" \| "select" \| "date" \| "datetime" \| "array" \| "json"` (default: `"text"`) |
+| `width` | `number` | нет | Ширина в px. Без неё колонки делят свободное место поровну |
+| `color` | `string \| (value) => string \| null` | нет | Цвет текста ячеек |
+| `backgroundColor` | `string \| (value) => string \| null` | нет | Цвет заливки ячеек |
+| `readOnly` | `boolean` | нет | Колонка только для чтения |
+| `align` | `"left" \| "center" \| "right"` | нет | Выравнивание (default: right для number, center для boolean) |
+| `options` | `SelectOption[]` | нет | Пункты для `type: "select"` |
+| `decimals` | `number` | нет | Знаков после запятой для `number` |
+| `subtype` | `"text" \| "number"` | нет | Тип элементов для `type: "array"` |
+| `children` | `ColumnDef[]` | нет | Вложенные колонки — многоуровневая шапка |
+| `visible` | `boolean` | нет | Скрыть колонку |
+| `nullable` | `boolean` | нет | Разрешить `null` (для boolean — третье состояние) |
+| `default` | `ScalarCellValue` | нет | Значение по умолчанию для новых строк |
+| `validationRules` | `ValidationRules` | нет | Клиентская валидация |
+| `fixed` | `"left" \| "right"` | нет | Зафиксировать колонку при горизонтальном скролле |
 
 ### `ValidationRules`
 
-| Поле | Тип | Описание |
-| --- | --- | --- |
-| `required` | `boolean` | Обязательное значение |
-| `pattern` | `string` | Регулярное выражение |
-| `patternMessage` | `string` | Сообщение при несоответствии pattern |
-| `minLength` / `maxLength` | `number` | Минимальная/максимальная длина |
-| `unique` | `boolean` | Уникальность значения в колонке |
+| Поле | Тип | Обязательный | Описание |
+| --- | --- | --- | --- |
+| `required` | `boolean` | нет | Обязательное значение |
+| `pattern` | `string` | нет | Регулярное выражение |
+| `patternMessage` | `string` | нет | Сообщение при несоответствии pattern |
+| `minLength` / `maxLength` | `number` | нет | Минимальная/максимальная длина |
+| `unique` | `boolean` | нет | Уникальность значения в колонке |
 
 ### Типы колбэков
 
@@ -165,8 +170,12 @@ npm run build  # сборка (tsc + styles.css)
 
 ## Архитектура
 
-- `NativeTable` (React-обёртка) — data/columns → `NativeSheet`, колбэки в структурированном виде
-- `NativeSheet` — координатор: модель, представление, редактор, выделение, undo, попапы
+Ядро нативное (чистый TypeScript + DOM, без React): `NativeSheet` создаётся в любой
+контейнер и работает сам по себе. React-обёртка `NativeTable` отвечает только за
+жизненный цикл: `data`/`columns` → `NativeSheet` и колбэки в структурированном виде.
+
+- `NativeTable` (React-обёртка) — конвертация пропсов, подписки, пересоздание по данным
+- `NativeSheet` — нативный координатор: модель, представление, редактор, выделение, undo, попапы
 - `Renderer` — нативный DOM + виртуализация строк и столбцов, фиксированные слои
 - `SheetModel` — данные ячеек в A1-ключ → значение
 - `SheetView` — сортировка/фильтрация (rowMap)
