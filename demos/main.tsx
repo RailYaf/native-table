@@ -1,4 +1,4 @@
-import { StrictMode, useState } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { createRoot } from "react-dom/client";
 import "../src/styles.css";
@@ -38,8 +38,25 @@ const demos: DemoItem[] = [
 	{ id: "styling", title: "Стилизация ячеек", component: DataTableStyling },
 ];
 
+const getDemoId = (): string => {
+	const id = window.location.hash.replace(/^#\/?/, "");
+	return demos.some((d) => d.id === id) ? id : demos[0].id;
+};
+
 function App() {
-	const [activeId, setActiveId] = useState(demos[0].id);
+	const [activeId, setActiveId] = useState(getDemoId);
+
+	useEffect(() => {
+		const onHash = () => setActiveId(getDemoId());
+		window.addEventListener("hashchange", onHash);
+		return () => window.removeEventListener("hashchange", onHash);
+	}, []);
+
+	const selectDemo = (id: string) => {
+		window.location.hash = `/${id}`;
+		setActiveId(id);
+	};
+
 	const active = demos.find((d) => d.id === activeId)!;
 	const Demo = active.component;
 
@@ -51,7 +68,7 @@ function App() {
 					<button
 						key={d.id}
 						className={`demo-nav-item${d.id === activeId ? " demo-nav-item--active" : ""}`}
-						onClick={() => setActiveId(d.id)}
+						onClick={() => selectDemo(d.id)}
 					>
 						{d.title}
 					</button>
