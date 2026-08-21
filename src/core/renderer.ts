@@ -139,6 +139,8 @@ export class Renderer {
 	/** Оверлей выделения внутри fixed-слоя (аналог .nt-range в cellsLayer) */
 	private fixedLeftRange: HTMLDivElement | null = null;
 	private fixedRightRange: HTMLDivElement | null = null;
+	/** Режим редактирования ячейки: прячет рамку выделения и в fixed-слоях */
+	private editing = false;
 
 	/**
 	 * Создать рендерер: строит DOM-каркас таблицы (шапка, тело, fixed-слои,
@@ -959,6 +961,7 @@ export class Renderer {
 			if (rangeEl) rangeEl.style.display = "none";
 			return;
 		}
+		if (this.editing) { rangeEl.style.display = "none"; return; }
 		const selStart = this.selectedRect?.start;
 		const selEnd = this.selectedRect?.end;
 		if (!selStart || !selEnd) { rangeEl.style.display = "none"; return; }
@@ -1262,6 +1265,13 @@ export class Renderer {
 		const noRows = this.visibleRowCount() === 0;
 		const contentH = this.headerH + this.totalHeight() + (noRows ? 100 : 20);
 		this.container.style.height = `${Math.max(0, contentH)}px`;
+	}
+
+	/** Включить/выключить режим редактирования: рамка выделения прячется и в fixed-слоях. */
+	setEditing(on: boolean): void {
+		if (this.editing === on) return;
+		this.editing = on;
+		this.render();
 	}
 
 	/** Перерисовать содержимое видимых ячеек без перекладки окна (изменения модели). */

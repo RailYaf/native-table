@@ -838,6 +838,7 @@ export class NativeSheet {
 	/** Переключить состояние «редактирование»: скрыть fill-handle и ручки ресайза, заблокировать фильтры. */
 	private setEditing(on: boolean): void {
 		this.overlay.setEditing(on);
+		this.renderer.setEditing(on);
 		this.container.classList.toggle("nt-editing", on);
 	}
 

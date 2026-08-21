@@ -552,11 +552,41 @@ export class Editor {
 		container.tabIndex = -1;
 		applyBox(container, box);
 
-		const textEl = document.createElement("div");
-		textEl.className = "nt-editor-date-text";
-		textEl.textContent = formatCellDisplay(currentValue || "", colDef);
+		// Текстовое поле с маской ввода: ДД.ММ.ГГГГ [ЧЧ:ММ]
+		const input = document.createElement("input");
+		input.className = "nt-editor-date-text";
+		input.type = "text";
+		input.value = formatCellDisplay(currentValue || "", colDef);
+		input.placeholder = withTime ? "ДД.ММ.ГГГГ ЧЧ:ММ" : "ДД.ММ.ГГГГ";
+		input.spellcheck = false;
+		input.autocomplete = "off";
 
-		container.append(textEl);
+		const applyMask = (raw: string): string => {
+			const digits = raw.replace(/\D/g, "").slice(0, withTime ? 12 : 8);
+			let out = "";
+			for (let i = 0; i < digits.length; i++) {
+				if (i === 2 || i === 4) out += ".";
+				else if (withTime && i === 6) out += " ";
+				else if (withTime && i === 8) out += ":";
+				out += digits[i];
+			}
+			return out;
+		};
+		const parseMasked = (masked: string): string | null => {
+			const d = masked.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+			if (!d) return null;
+			const iso = `${d[3]}-${d[2]}-${d[1]}`;
+			if (!withTime) return iso;
+			const t = masked.match(/^(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2})$/);
+			return t ? `${iso}T${t[4]}:${t[5]}:00` : null;
+		};
+		input.addEventListener("input", () => {
+			input.value = applyMask(input.value);
+			const iso = parseMasked(input.value);
+			if (iso) this.dateValue = iso;
+		});
+
+		container.append(input);
 
 		this.dateValue = currentValue;
 		this.datePicker = new DatePickerPopup(this.host);
@@ -568,7 +598,7 @@ export class Editor {
 			}
 			this.datePicker?.open(box, this.dateValue, withTime, (iso) => {
 				this.dateValue = iso;
-				textEl.textContent = formatCellDisplay(iso, colDef);
+				input.value = formatCellDisplay(iso, colDef);
 				this.commit("none");
 			}, () => this.datePicker?.close());
 		};
@@ -583,7 +613,6 @@ export class Editor {
 		};
 		document.addEventListener("focusin", this.dateFocusHandler);
 
-		textEl.addEventListener("click", () => togglePicker());
 		container.addEventListener("keydown", (e) => {
 			// Первое Escape закрывает календарь, второе — отменяет редактирование
 			if (e.key === "Escape" && this.datePicker?.isOpen()) {
@@ -600,7 +629,7 @@ export class Editor {
 		this.active = true;
 		this.mode = "date";
 		container.classList.add("nt-editor--active");
-		container.focus();
+		input.focus();
 		togglePicker(); // календарь открывается сразу при входе в редактирование
 	}
 
