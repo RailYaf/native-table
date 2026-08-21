@@ -387,6 +387,14 @@ export function NativeTable({
 		sheetRef.current?.setTheme(theme ?? "light");
 	}, [theme]);
 
+	// Зебра — флаг рендерера, переключается без пересоздания таблицы
+	useEffect(() => {
+		if (sheetRef.current) {
+			sheetRef.current.renderer.striped = striped;
+			sheetRef.current.renderer.render(true);
+		}
+	}, [striped]);
+
 	useEffect(() => {
 		if (sheetRef.current) {
 			const set = new Set(disabledRows);
