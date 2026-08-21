@@ -72,27 +72,3 @@ body {
 	font-size: 13px;
 	margin: 8px 0 0;
 }
-
-.demo-log {
-	background: #0f1117;
-	color: #9ece6a;
-	font-family: ui-monospace, Menlo, monospace;
-	font-size: 12px;
-	border-radius: 6px;
-	padding: 10px 12px;
-	margin-top: 12px;
-	white-space: pre-wrap;
-	max-height: 220px;
-	overflow: auto;
-}
-
-.demo-inline {
-	display: flex;
-	gap: 16px;
-	flex-wrap: wrap;
-}
-
-.demo-inline .nt-table-wrapper {
-	flex: 1;
-	min-width: 420px;
-}

@@ -1,6 +1,6 @@
-import type { ColumnDef, HeaderConfig, LayoutData, PaginationConfig, SortFilterSnapshot, ValidationError, ToolbarConfig, CellConfig, ChangeItem } from "./utils/types";
+import type { ColumnDef, HeaderConfig, LayoutData, PaginationConfig, SortFilterSnapshot, ValidationError, ToolbarButton, CellConfig, ChangeItem } from "./utils/types";
 
-export type { ToolbarButton, ToolbarConfig } from "./utils/types";
+export type { ToolbarButton } from "./utils/types";
 
 export interface NativeTableProps {
 	className?: string;
@@ -39,8 +39,8 @@ export interface NativeTableProps {
 	header?: HeaderConfig;
 	/** Настройки ячеек */
 	cell?: CellConfig;
-	/** Настройки тулбара */
-	toolbar?: ToolbarConfig;
+	/** Кнопки тулбара, которые нужно скрыть */
+	hiddenToolbarActions?: ToolbarButton[];
 	/** Заданные ширины колонок: columnName → px */
 	columnWidths?: Record<string, number>;
 	/** Зебра — чередующаяся расцветка строк */

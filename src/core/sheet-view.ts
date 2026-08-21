@@ -147,38 +147,6 @@ export class SheetView {
 		this._freshRows.add(row);
 	}
 
-	// ── Сериализация состояния (для undo/redo) ────────────────────────────────
-
-	/** Снимок сортировки и фильтров. */
-	snapshot(): string {
-		return JSON.stringify({
-			sort: this.sortStack.map((s) => ({ col: s.col, asc: s.asc })),
-			filters: Array.from(this.filters.entries()).map(([col, f]) => ({
-				col,
-				op: f.op,
-				value: f.value,
-				value2: f.value2,
-				values: f.values ? Array.from(f.values) : undefined,
-			})),
-		});
-	}
-
-	/** Восстановить сортировку и фильтры из снимка. */
-	restore(snapshot: string): void {
-		const state = JSON.parse(snapshot) as {
-			sort: Array<{ col: number; asc: boolean }>;
-			filters: Array<{ col: number; op: FilterOp; value?: string; value2?: string; values?: string[] }>;
-		};
-		this.sortStack = state.sort.map((s) => ({ col: s.col, asc: s.asc }));
-		this.filters.clear();
-		for (const f of state.filters) {
-			const filter: ColumnFilter = { op: f.op, value: f.value, value2: f.value2 };
-			if (f.values) filter.values = new Set(f.values);
-			this.filters.set(f.col, filter);
-		}
-		this.rebuild();
-	}
-
 	private applySort(col: number, direction: SortDirection): void {
 		this.sortStack = this.sortStack.filter((s) => s.col !== col);
 		if (direction === "asc") this.sortStack.push({ col, asc: true });

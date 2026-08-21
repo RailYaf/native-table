@@ -31,7 +31,7 @@ export function NativeTable({
 	resizableColumns,
 	header,
 	cell,
-	toolbar,
+	hiddenToolbarActions,
 	columnWidths,
 	striped = false,
 	theme,
@@ -467,8 +467,7 @@ export function NativeTable({
 		);
 	}
 
-	const iconSize = toolbar?.iconSize ?? TOOLBAR_ICON_SIZE;
-	const hidden = toolbar?.hidden ?? [];
+	const hidden = hiddenToolbarActions ?? [];
 	const show = (name: ToolbarButton) => !hidden.includes(name);
 
 	return (
@@ -487,9 +486,9 @@ export function NativeTable({
 			)}
 			{!readOnly && (
 				<div className="nt-toolbar" onClick={onToolbar}>
-					{show("save") && <button className="nt-tb-btn nt-tb-save" data-action="save" disabled={hasErrors}><SaveIcon size={iconSize} /><span className="nt-tb-label">Сохранить</span><span className="nt-tb-dot" /></button>}
-					{show("undo") && <button className="nt-tb-btn" data-action="undo"><UndoIcon size={iconSize} /><span className="nt-tb-label">Отменить</span></button>}
-					{show("redo") && <button className="nt-tb-btn" data-action="redo"><RedoIcon size={iconSize} /><span className="nt-tb-label">Вернуть</span></button>}
+					{show("save") && <button className="nt-tb-btn nt-tb-save" data-action="save" disabled={hasErrors}><SaveIcon size={TOOLBAR_ICON_SIZE} /><span className="nt-tb-label">Сохранить</span><span className="nt-tb-dot" /></button>}
+					{show("undo") && <button className="nt-tb-btn" data-action="undo"><UndoIcon size={TOOLBAR_ICON_SIZE} /><span className="nt-tb-label">Отменить</span></button>}
+					{show("redo") && <button className="nt-tb-btn" data-action="redo"><RedoIcon size={TOOLBAR_ICON_SIZE} /><span className="nt-tb-label">Вернуть</span></button>}
 				</div>
 			)}
 			<div ref={ref} className={`nt-container nt-root${theme === "dark" ? " nt-dark" : ""}`} style={style} />

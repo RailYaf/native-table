@@ -303,21 +303,6 @@ export class NativeSheet {
 		this.updateToolbar();
 	}
 
-	setColumns(columns: ColumnDef[]): void {
-		this.options = { ...this.options, columns };
-		this.renderer.setColumns(columns);
-		// Состав/ширины колонок изменились — рамка выделения должна пересчитаться
-		this.refreshOverlay();
-	}
-
-	/** Обновить rowIds без пересоздания таблицы (при смене data). */
-	updateRowIds(rowIds: (string | number)[]): void {
-		this.options = { ...this.options, rowIds };
-		this.renderer.rowIds = rowIds;
-		this.rowIdToIndex.clear();
-		rowIds.forEach((id, idx) => this.rowIdToIndex.set(String(id), idx));
-	}
-
 	/** Применить внешние ширины колонок (сохранённый лейаут) после создания таблицы. */
 	setColumnWidths(widths: Record<string, number>): void {
 		this.renderer.columnWidths = widths;
@@ -361,15 +346,6 @@ export class NativeSheet {
 				])
 			),
 		};
-	}
-
-	/** Получить (или сгенерировать) rowId для строки. */
-	private getOrCreateRowId(row: number): string | number {
-		const id = this.options.rowIds?.[row];
-		if (id !== undefined && id !== null) return id;
-		let tid = this._tempRowIds.get(row);
-		if (!tid) { tid = generateTempId(); this._tempRowIds.set(row, tid); }
-		return tid;
 	}
 
 	/** Догенерировать temp rowIds для новых строк при расширении. */
@@ -1406,44 +1382,25 @@ export class NativeSheet {
 	// ──────────────────────────────────────────────────────────────────────────
 
 	/**
-	 * Применить undo/redo-батч: вернуть ширины колонок, состояние представления
-	 * (сортировка/фильтр) или значения ячеек; перерисовать и обновить тулбар.
+	 * Применить undo/redo-батч: вернуть значения ячеек, перерисовать,
+	 * обновить тулбар.
 	 */
 	private applyHistory(direction: "undo" | "redo"): void {
 		const batch = direction === "undo" ? this.undoManager.undo() : this.undoManager.redo();
 		if (!batch) return;
 
-		let layoutChanged = false;
-		let viewChanged = false;
 		const changed: CellChanges = {};
 
 		for (const rec of batch) {
-			if (rec.colWidth) {
-				this.renderer.setColWidth(rec.col, rec.colWidth.old);
-				layoutChanged = true;
-			} else if (rec.view) {
-				this.view.restore(rec.view.old);
-				viewChanged = true;
-			} else {
-				const key = cellKey(rec.row, rec.col);
-				const current = this.model.get(rec.row, rec.col);
-				const wasEmpty = this.model.isEmpty(rec.row, rec.col);
-				changed[key] = { old: wasEmpty ? null : { ...current }, new: rec.oldValue };
-				if (rec.oldValue === null) this.model.deleteSilent(rec.row, rec.col);
-				else this.model.setSilent(rec.row, rec.col, rec.oldValue);
-			}
+			const key = cellKey(rec.row, rec.col);
+			const current = this.model.get(rec.row, rec.col);
+			const wasEmpty = this.model.isEmpty(rec.row, rec.col);
+			changed[key] = { old: wasEmpty ? null : { ...current }, new: rec.oldValue };
+			if (rec.oldValue === null) this.model.deleteSilent(rec.row, rec.col);
+			else this.model.setSilent(rec.row, rec.col, rec.oldValue);
 		}
 
-		if (viewChanged) {
-			this.syncView();
-			this.updateSortIndicators();
-		}
 		this.renderer.refreshValues();
-		if (layoutChanged || viewChanged) {
-			this.renderer.updateContainerSizes();
-			this.renderer.render(true);
-			this.overlay.update(this.selection);
-		}
 		this.updateToolbar();
 		this.model.emit(direction, changed);
 	}

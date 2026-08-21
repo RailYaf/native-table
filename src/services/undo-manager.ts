@@ -13,27 +13,21 @@ import type { Cell } from "../utils/types";
 /** Максимальная глубина истории. */
 const MAX_HISTORY = 100;
 
-/** Одна запись изменения (ячейка, resize или снимок представления). */
+/** Одна запись изменения ячейки. */
 export interface ChangeRecord {
 	row: number;
 	col: number;
 	oldValue: Cell | null;
 	newValue: Cell | null;
-	/** Если задано — изменение ширины колонки */
-	colWidth?: { old: number; new: number };
-	/** Если задано — изменение сортировки/фильтров (сериализованные снимки) */
-	view?: { old: string; new: string };
 }
 
-/** Поменять местами old/new во всех полях записи. */
+/** Поменять местами old/new в записи. */
 function invert(rec: ChangeRecord): ChangeRecord {
 	return {
 		row: rec.row,
 		col: rec.col,
 		oldValue: rec.newValue,
 		newValue: rec.oldValue,
-		colWidth: rec.colWidth && { old: rec.colWidth.new, new: rec.colWidth.old },
-		view: rec.view && { old: rec.view.new, new: rec.view.old },
 	};
 }
 
@@ -48,11 +42,6 @@ export class UndoManager {
 	/** Записать изменение ячейки целиком: старое значение + новое. */
 	record(row: number, col: number, oldValue: Cell | null, newValue: Cell | null): void {
 		this.batch.push({ row, col, oldValue, newValue });
-	}
-
-	/** Добавить готовую запись (resize, изменение представления и т.д.). */
-	addRecord(rec: ChangeRecord): void {
-		this.batch.push(rec);
 	}
 
 	/** Зафиксировать накопленный batch в undoStack. Очищает redoStack. */
@@ -88,10 +77,9 @@ export class UndoManager {
 	/** Можно ли отменить? */
 	get canUndo(): boolean { return this.undoStack.length > 0 || this.batch.length > 0; }
 
-	/** Есть ли в истории изменения данных (не только сортировка/фильтр)? */
+	/** Есть ли в истории изменения данных? */
 	get hasDataChanges(): boolean {
-		const isData = (r: ChangeRecord) => !r.view;
-		return this.batch.some(isData) || this.undoStack.some((b) => b.some(isData));
+		return this.batch.length > 0 || this.undoStack.some((b) => b.length > 0);
 	}
 
 	/** Можно ли вернуть? */

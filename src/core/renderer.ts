@@ -333,55 +333,6 @@ export class Renderer {
 		this.render(true);
 	}
 
-	/**
-	 * Заменить колонки: развернуть иерархию, пересчитать ширины/фиксации,
-	 * восстановить сохранённые ширины по именам колонок и перерисовать.
-	 */
-	setColumns(columns: ColumnDef[]): void {
-		const flat = flattenColumns(columns);
-		// Сохранить вручную изменённые ширины по имени колонки: setColumns может
-		// прийти с тем же составом (обновление defs) — ресайз сбрасывать нельзя
-		const oldManualByName = new Map<string, number>();
-		for (let c = 0; c < this.totalCols; c++) {
-			if (!this.manualColWidths.has(c)) continue;
-			const name = this.columns[c]?.name;
-			if (name) oldManualByName.set(name, this.colWidths[c]);
-		}
-		this.columns = flat.flatColumns;
-		this.headerGrid = flat.headerGrid;
-		this.maxDepth = flat.maxDepth || 1;
-		this.totalCols = this.columns.length;
-		this.dataColCount = this.totalCols;
-		this.measureCache.clear();
-		this.manualColWidths.clear();
-		this.lastViewportW = -1; // состав колонок изменился — пересчитать ширины под вьюпорт
-		this.colWidths = Array.from(
-			{ length: this.totalCols },
-			(_, i) => this.columns[i]?.width ?? DEFAULT_COL_WIDTH,
-		);
-		this.rebuildColLeftCache();
-		this.computeFixedCols();
-		this.setupFixedLayers();
-		// Вручную изменённые ширины (по имени) приоритетнее внешнего лейаута —
-		// сохранённый columnWidths мог устареть после свежего ресайза
-		for (let c = 0; c < this.totalCols; c++) {
-			const name = this.columns[c]?.name;
-			const manual = name ? oldManualByName.get(name) : undefined;
-			if (manual !== undefined) {
-				this.colWidths[c] = manual;
-				this.manualColWidths.add(c);
-				continue;
-			}
-			const storedWidth = name ? this.columnWidths[name] : undefined;
-			if (storedWidth !== undefined) {
-				this.colWidths[c] = Math.max(MIN_COL_WIDTH, storedWidth);
-				this.manualColWidths.add(c); // сохранённый лейаут — фиксируем
-			}
-		}
-		this.headerHeightsDirty = true;
-		// Очистить старые DOM-ячейки (могли остаться от overscan)
-		this.render(true);
-	}
 
 	/** Перевести display-строку в data-строку через rowMap (сортировка/фильтр). */
 	private dataRow(displayRow: number): number {

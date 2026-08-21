@@ -33,7 +33,6 @@ export type {
 	SortFilterState,
 	SortDirection,
 	ToolbarButton,
-	ToolbarConfig,
 	LayoutData,
 	CellConfig,
 	ValidationRules,

@@ -226,14 +226,7 @@ export interface CellConfig {
 }
 
 /** Идентификаторы кнопок тулбара (используются в ToolbarConfig.hidden и data-action). */
-export type ToolbarButton = "save" | "undo" | "redo" | "background" | "textColor";
-
-export interface ToolbarConfig {
-	/** Размер иконок в px (default: 18) */
-	iconSize?: number;
-	/** Кнопки, которые нужно скрыть */
-	hidden?: ToolbarButton[];
-}
+export type ToolbarButton = "save" | "undo" | "redo";
 
 export interface NativeSheetOptions {
 	/** Количество строк данных */

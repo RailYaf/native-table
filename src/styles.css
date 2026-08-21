@@ -163,27 +163,6 @@
 	pointer-events: none;
 }
 
-.nt-tb-color {
-	position: absolute;
-	top: 0; left: 0;
-	width: 100%; height: 100%;
-	opacity: 0;
-	cursor: pointer;
-}
-
-.nt-tb-color-btn {
-	position: relative;
-	overflow: visible;
-}
-
-.nt-tb-color-bar {
-	position: absolute;
-	bottom: 1px; left: 4px; right: 4px;
-	height: 3px;
-	border-radius: 1px;
-	pointer-events: none;
-}
-
 .nt-root {
 	position: relative;
 }
